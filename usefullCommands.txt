@@ -1,0 +1,15 @@
+smarties.py MARL_LES --nThreads 56 --hpc gigatlong --clockHours 15 
+
+smarties.py MARL_LES /u/caldana/smarties/apps/MARL_LES/settings/VRACER_LES_FFNN_4blocks_00.json --nThreads 20 --hpc gigat --clockHours 24 --runprefix /scratch/hpc/caldana/ 
+
+smarties.py MARL_LES /u/caldana/smarties/apps/MARL_LES/settings/VRACER_LES_FFNN_4blocks_01.json --nThreads 56 --hpc gigatlong --clockHours 24 --runprefix /scratch/hpc/caldana/ 
+
+
+scp caldana@tosca.mate.polimi.it:/u/caldana/test20211220130215.tar.gz .
+
+
+smarties.py MARL_LES /u/caldana/smarties/apps/MARL_LES/settings/VRACER_LES_FFNNGRID_4bsize.json --nThreads 32 --hpc gigatlong --clockHours 24 --runprefix /scratch/hpc/caldana/ 
+
+smarties.py MARL_LES /u/caldana/smarties/apps/MARL_LES/settings/VRACER_LES_GRU_4bsize.json --nThreads 32 --hpc gigatlong --clockHours 24 --runprefix /scratch/hpc/caldana/ 
+
+python eval_all_train.py test20220103085436 --restartsPath /scratch/hpc/caldana/ --nThreads 32 --hpc gigatlong

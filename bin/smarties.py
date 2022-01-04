@@ -6,7 +6,7 @@
 #
 #  Created by Guido Novati (novatig@ethz.ch).
 #
-import argparse, os, psutil, sys, shutil, subprocess, signal, glob
+import argparse, os, psutil, sys, shutil, subprocess, signal, glob, datetime
 
 def signal_handler(sig, frame):
   JOBID = os.getenv('SLURM_JOB_ID')
@@ -14,31 +14,14 @@ def signal_handler(sig, frame):
   subprocess.run(cmd, executable=parsed.shell, shell=True) 
   sys.exit(0)
 
-SCRATCH       = os.getenv('SCRATCH') or ''
 SMARTIES_ROOT = os.getenv('SMARTIES_ROOT') or ''
-HOSTNAME      = os.popen("hostname").read()
-
-def isEuler():
-  return HOSTNAME[:5]=='euler' or HOSTNAME[:3]=='eu-'
-
-def isDaint():
-  return HOSTNAME[:5]=='daint'
 
 def is_exe(fpath):
   return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 def getDefaults():
-  if isEuler():
-    print('Detected ETHZ cluster Euler')
-    runprefix = SCRATCH + '/smarties/'
-    nThreads = 36
-  elif isDaint():
-    print('Detected CSCS cluster Piz Daint')
-    runprefix = SCRATCH + '/smarties/'
-    nThreads = 12
-  else:
-    runprefix = SMARTIES_ROOT + '/runs/'
-    nThreads = psutil.cpu_count(logical = False)
+  runprefix = SMARTIES_ROOT + '/runs/'
+  nThreads = psutil.cpu_count(logical = False)
   return runprefix, nThreads
 
 def copySettingsFiles(settings, absRunPath):
@@ -236,54 +219,39 @@ def setEnvironmentFlags(parsed):
 
 def setLaunchCommand(parsed, absRunPath):
   nProcesses, nThreads, rundir = parsed.nProcesses, parsed.nThreads, parsed.runname
-  clockHours = int(parsed.clockHours)
-  clockMinutes = int((parsed.clockHours - clockHours) / 60)
+  clockHours = min(int(parsed.clockHours), 24)
   # default:
   #cmd = "mpirun -n %d --map-by ppr:%d:node ./%s %s | tee out.log" \
   #      % (nProcesses, parsed.nTaskPerNode, parsed.execname, parsed.args)
   cmd = "mpirun -n %d ./%s %s | tee out.log" \
         % (nProcesses, parsed.execname, parsed.args)
 
-  if isEuler():
-    assert rundir is not None, "--runname option is required on Euler and Daint"
-    if   nThreads == 18 and parsed.nTaskPerNode == 1:
-      map_by = "--map-by ppr:1:socket --bind-to none"
-    elif nThreads == 36 and parsed.nTaskPerNode == 1:
-      map_by = "--map-by ppr:1:node --bind-to none"
-    else:
-      map_by = "--map-by ppr:%d:node --bind-to none" % parsed.nTaskPerNode
-    cmd = "mpirun -n %d %s ./%s %s " % \
-          (nProcesses, map_by, parsed.execname, parsed.args)
-    if parsed.interactive is False:
-      cmd = "bsub -n %d -R \"select[model==XeonGold_6150] span[ptile=36]\" " \
-          " -J %s -W %s:00 %s " \
-          % (nProcesses * nThreads, rundir, clockHours, cmd )
-
-  elif isDaint() and parsed.interactive is False:
-    nTaskPerNode, nNodes = parsed.nTaskPerNode, nProcesses / parsed.nTaskPerNode
-    assert rundir is not None, "--runname option is required on Euler and Daint"
-    f = open(absRunPath + '/daint_sbatch','w')
-    f.write('#!/bin/bash -l \n')
-    f.write('#SBATCH --job-name=%s \n' % rundir)
-    if parsed.debug:
-      f.write('#SBATCH --time=00:30:00 \n')
-      f.write('#SBATCH --partition=debug \n')
-    else:
-      f.write('#SBATCH --time=%s:00:00 \n' % clockHours)
-    f.write('#SBATCH --output=%s_out_%%j.txt \n' % rundir)
-    f.write('#SBATCH --error=%s_err_%%j.txt \n'  % rundir)
-    f.write('#SBATCH --constraint=gpu \n')
-    f.write('#SBATCH --account=s929 \n')
-    f.write('#SBATCH --nodes=%d \n' % nNodes)
-    f.write('srun -n %d --nodes=%d --ntasks-per-node=%d ./%s %s \n' \
-            % (nProcesses, nNodes, nTaskPerNode, parsed.execname, parsed.args))
-    f.close()
-    cmd = "chmod 755 daint_sbatch \n sbatch daint_sbatch"
-
-  elif isDaint() and parsed.interactive is True:
-    nTaskPerNode, nNodes = parsed.nTaskPerNode, nProcesses / parsed.nTaskPerNode
-    cmd = "srun -C gpu -u -p debug -n %d --nodes %d --ntasks-per-node %d ./%s %s" \
-          % (nProcesses, nNodes, nTaskPerNode, parsed.execname, parsed.args)
+  if parsed.hpc:
+    assert rundir is not None, "--runname option is required on hpc"
+    filename = '{}/queue.sub'.format(absRunPath)
+    with open(filename, 'w') as f:
+      f.write('#!/bin/bash\n')
+      f.write('#PBS -S /bin/bash\n')
+      f.write('#PBS -l nodes=1:ppn={},walltime={}:00:00 -q {}\n'.format(nThreads, clockHours, parsed.hpc))
+      f.write('cd ${PBS_O_WORKDIR}\n')
+      f.write('export mkPrefix=/u/sw \n')
+      f.write('source $mkPrefix/etc/profile \n')
+      f.write('module load gcc-glibc/11 hdf5 gsl openblas\n')
+      f.write('export SMARTIES_ROOT=/u/caldana/smarties/\n')
+      f.write('export PATH=${SMARTIES_ROOT}/bin:${PATH}\n')
+      f.write('export LD_LIBRARY_PATH=${SMARTIES_ROOT}/lib:${LD_LIBRARY_PATH}\n')
+      f.write('export PYTHONPATH=${PYTHONPATH}:${SMARTIES_ROOT}/lib\n')
+      f.write('export HDF5_ROOT=$mkHdf5Prefix\n')
+      f.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5_ROOT/lib\n')
+      f.write('export GSL_ROOT_DIR=$mkGslPrefix\n')
+      f.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GSL_ROOT_DIR/lib\n')
+      f.write('export FFTW_ROOT=/u/caldana/CubismUP_3D/dependencies/build/fftw-3.3.7\n')
+      f.write('export FFTW_ROOT_DIR=$FFTW_ROOT\n')
+      f.write('export FFTW_DIR=$FFTW_ROOT\n')
+      f.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$FFTW_ROOT/lib\n')
+      f.write('mpiexec -n {} --map-by ppr:{}:node {} {} &> log.out\n'.format(nProcesses, nThreads, absRunPath+'/'+parsed.execname, parsed.args))
+      f.close()
+    cmd = "qsub " + filename
   return cmd
 
 if __name__ == '__main__':
@@ -390,15 +358,24 @@ if __name__ == '__main__':
       help="Which shell will be used to execute launch command. " \
            "Defaults to /bin/bash.")
 
+  parser.add_argument('--hpc', default="", help="HPC name")
+
   parser.add_argument('--args', default="",
       help="Arguments to pass directly to executable")
 
   parsed = parser.parse_args()
 
-  if parsed.runname is not None:
-    relRunPath = parsed.runprefix + '/' + parsed.runname
-  else:
-    relRunPath = './'
+  now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+  if parsed.hpc:
+    assert (
+      ((parsed.nThreads == 56 or parsed.nThreads == 32) and parsed.hpc == 'gigatlong') or 
+      (parsed.nThreads == 20 and parsed.hpc == 'gigat')
+    )
+
+  if parsed.runname is None:
+    parsed.runname = 'test' + now
+  relRunPath = parsed.runprefix + '/' + parsed.runname
   # rundir overwriting is allowed (exist_ok could be parsed.isTraining==False):
   os.makedirs(relRunPath, exist_ok=True)
 
@@ -424,6 +401,7 @@ if __name__ == '__main__':
   cmd = cmd + setEnvironmentFlags(parsed)
   cmd = cmd + setLaunchCommand(parsed, absRunPath)
 
-  # print('COMMAND:' + cmd )
+  print('COMMAND:' + cmd )
   signal.signal(signal.SIGINT, signal_handler)
   subprocess.run(cmd, executable=parsed.shell, shell=True)
+
