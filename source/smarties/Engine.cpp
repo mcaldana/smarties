@@ -106,10 +106,10 @@ void Engine::run(const std::function<void(Communicator*const)> & callback)
     return callback(sc);
   };
 
-  run(fullcallback);
+  runFull(fullcallback);
 }
 
-void Engine::run(const std::function<void(Communicator*const,
+void Engine::runArg(const std::function<void(Communicator*const,
                                           int, char **      )> & callback)
 {
   assert(distrib->workerProcessesPerEnv <= 1);
@@ -119,10 +119,10 @@ void Engine::run(const std::function<void(Communicator*const,
     return callback(sc, argc, argv);
   };
 
-  run(fullcallback);
+  runFull(fullcallback);
 }
 
-void Engine::run(const std::function<void(Communicator*const,
+void Engine::runMpi(const std::function<void(Communicator*const,
                                           MPI_Comm          )> & callback)
 {
   const environment_callback_t fullcallback = [&](
@@ -130,10 +130,10 @@ void Engine::run(const std::function<void(Communicator*const,
     return callback(sc, mc);
   };
 
-  run(fullcallback);
+  runFull(fullcallback);
 }
 
-void Engine::run(const std::function<void(Communicator*const,
+void Engine::runFull(const std::function<void(Communicator*const,
                                           MPI_Comm,
                                           int, char **      )> & callback)
 {

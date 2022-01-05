@@ -65,6 +65,6 @@ int main(int argc, char**argv)
 {
   smarties::Engine e(argc, argv);
   if( e.parse() ) return 1;
-  e.run( app_main );
+  e.runArg( app_main );
   return 0;
 }

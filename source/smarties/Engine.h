@@ -30,16 +30,16 @@ public:
 
   VISIBLE ~Engine();
 
-  VISIBLE void run(const std::function<void(Communicator*const,
+  VISIBLE void runArg(const std::function<void(Communicator*const,
                                             int, char **      )> & callback);
 
-  VISIBLE void run(const std::function<void(Communicator*const,
+  VISIBLE void runFull(const std::function<void(Communicator*const,
                                             MPI_Comm,
                                             int, char **      )> & callback);
 
   VISIBLE void run(const std::function<void(Communicator*const)> & callback);
 
-  VISIBLE void run(const std::function<void(Communicator*const,
+  VISIBLE void runMpi(const std::function<void(Communicator*const,
                                             MPI_Comm          )> & callback);
 
   VISIBLE int parse();

@@ -71,3 +71,4 @@ _deprecated*
 /source/Learners/Pytorch/old_stuff.py
 
 *.swp
+.vscode
