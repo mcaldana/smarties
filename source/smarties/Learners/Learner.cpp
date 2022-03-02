@@ -13,6 +13,7 @@
 #include "../ReplayMemory/MemoryProcessing.h"
 
 #include <unistd.h>
+#include <time.h>
 
 namespace smarties
 {
@@ -178,9 +179,9 @@ void Learner::processStats(const bool bPrintHeader)
     #ifdef PRINT_ALL_RANKS
       printf("ID  #/T   %s\n", head.str().c_str());
     #else
-      printf("ID #/T   %s\n", head.str().c_str());
+      printf("Timestamp  ID #/T   %s\n", head.str().c_str());
     #endif
-    if(currStep==freqPrint) fprintf(fout, "ID #/T   %s\n", head.str().c_str());
+    if(currStep==freqPrint) fprintf(fout, "Timestamp  ID #/T   %s\n", head.str().c_str());
   }
 
   const unsigned learnID = data->learnID;
@@ -188,9 +189,9 @@ void Learner::processStats(const bool bPrintHeader)
     const unsigned rank = learn_rank;
     printf("%01u-%01u %05u%s\n", rank, learnID, tStamp,buf.str().c_str());
   #else
-    printf(     "%02u %05u%s\n",       learnID, tStamp,buf.str().c_str());
+    printf(     "%010lu %02u %05u%s\n", (unsigned long)time(NULL), learnID, tStamp,buf.str().c_str());
   #endif
-  fprintf(fout, "%02u %05u%s\n",       learnID, tStamp,buf.str().c_str());
+  fprintf(fout, "%010lu %02u %05u%s\n", (unsigned long)time(NULL), learnID, tStamp,buf.str().c_str());
   fclose(fout); fflush(0);
 }
 
