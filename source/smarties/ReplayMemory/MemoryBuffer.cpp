@@ -28,11 +28,11 @@ MemoryBuffer::MemoryBuffer(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& 
 {
   episodes.reserve(2*settings.maxTotObsNum);
   inProgress.reserve(distrib.nAgents);
-  for (Uint i=0; i<distrib.nAgents; ++i)
+  for (uint64_t i=0; i<distrib.nAgents; ++i)
     inProgress.push_back(std::make_unique<Episode>(MDP));
 
   LDvec initGuessStateRewStats(MDP.dimStateObserved * 2 + 3, 0);
-  for(Uint i=0; i<MDP.dimStateObserved; ++i)
+  for(uint64_t i=0; i<MDP.dimStateObserved; ++i)
     initGuessStateRewStats[i + MDP.dimStateObserved] = 1;
   initGuessStateRewStats[MDP.dimStateObserved*2] = 1;
   initGuessStateRewStats[MDP.dimStateObserved*2 + 2] = 1;
@@ -67,7 +67,7 @@ void MemoryBuffer::storeState(Agent&a)
 
   // assign or check id of agent generating episode
   if (a.agentStatus == INIT) S.agentID = a.localID;
-  else assert(S.agentID == (Sint) a.localID);
+  else assert(S.agentID == (int64_t) a.localID);
 
   // if no tuples, init state. if tuples, cannot be initial state:
   assert( (S.nsteps() == 0) == (a.agentStatus == INIT) );
@@ -77,7 +77,7 @@ void MemoryBuffer::storeState(Agent&a)
       const Fvec vecSold = a.getObservedOldState<Fval>();
       const Fvec memSold = S.states.back();
       static constexpr Fval EPS = std::numeric_limits<Fval>::epsilon();
-      for (Uint i=0; i<vecSold.size() && same; ++i) {
+      for (uint64_t i=0; i<vecSold.size() && same; ++i) {
         auto D = std::max({std::fabs(memSold[i]), std::fabs(vecSold[i]), EPS});
         same = same && std::fabs(memSold[i]-vecSold[i])/D < 100*EPS;
       }
@@ -154,7 +154,7 @@ void MemoryBuffer::addEpisodeToTrainingSet(const Agent& a)
     // this agent is last to reset the sequence.
     assert(distrib.bIsMaster == false);
     std::lock_guard<std::mutex> lock(envTerminationCheck);
-    for (Uint i=0; i<inProgress.size(); ++i) {
+    for (uint64_t i=0; i<inProgress.size(); ++i) {
       if (i == a.ID or inProgress[i]->agentID < 0) continue;
       fullEnvReset = fullEnvReset && inProgress[i]->nsteps() == 0;
     }
@@ -187,7 +187,7 @@ void MemoryBuffer::restart(const std::string base)
       fflush(0);
     }
 
-    const Uint dimS = MDP.dimStateObserved; assert(MDP.stateMean.size()==dimS);
+    const uint64_t dimS = MDP.dimStateObserved; assert(MDP.stateMean.size()==dimS);
     std::vector<double> V(dimS);
     size_t size1 = fread(V.data(), sizeof(double), dimS, wFile);
     MDP.stateMean = std::vector<nnReal>(V.begin(), V.end());
@@ -211,7 +211,7 @@ void MemoryBuffer::restart(const std::string base)
     return;
   }
 
-  const Uint learn_rank = MPICommRank(distrib.learners_train_comm);
+  const uint64_t learn_rank = MPICommRank(distrib.learners_train_comm);
   snprintf(fName, 512, "%s_rank_%03u_learner_status.raw",
       base.c_str(), (unsigned) learn_rank);
   FILE * const fstat = fopen(fName, "r");
@@ -237,7 +237,7 @@ void MemoryBuffer::restart(const std::string base)
     unsigned long nStoredEpisodes = 0, nStoredObservations = 0;
     unsigned long nLocalSeenEps = 0, nLocalSeenObs = 0;
     long nInitialData = 0, doneGradSteps = 0;
-    Uint pass = 1;
+    uint64_t pass = 1;
     pass = pass && 1==fscanf(fstat, "nStoredEps: %lu\n", &nStoredEpisodes);
     counters.nEpisodes = nStoredEpisodes;
     pass = pass && 1==fscanf(fstat, "nStoredObs: %lu\n", &nStoredObservations);
@@ -292,7 +292,7 @@ void MemoryBuffer::save(const std::string base)
     Utilities::copyFile(backname, base + "_scaling.raw");
   }
 
-  const Uint rank = MPICommRank(distrib.learners_train_comm);
+  const uint64_t rank = MPICommRank(distrib.learners_train_comm);
   std::string fName = base + "_rank_" +Utilities::num2str(rank,3)+ "_learner_";
 
   const unsigned long nStoredEpisodes = counters.nEpisodes;
@@ -316,7 +316,7 @@ void MemoryBuffer::save(const std::string base)
 
   FILE * const fdata = fopen((fName + "data_backup.raw").c_str(), "wb");
   assert(fdata != NULL);
-  for(Uint i = 0; i <nStoredEpisodes; ++i) episodes[i]->save(fdata);
+  for(uint64_t i = 0; i <nStoredEpisodes; ++i) episodes[i]->save(fdata);
   fflush(fdata); fclose(fdata);
 
   Utilities::copyFile(fName + "status_backup.raw", fName + "status.raw");
@@ -332,16 +332,16 @@ void MemoryBuffer::clearAll()
   counters.nEpisodes = 0;
 }
 
-Uint MemoryBuffer::clearOffPol(const Real C, const Real tol)
+uint64_t MemoryBuffer::clearOffPol(const Real C, const Real tol)
 {
   std::lock_guard<std::mutex> lock(dataset_mutex);
-  Uint i = 0;
+  uint64_t i = 0;
   while (i < episodes.size())
   {
-    Uint _nOffPol = 0;
+    uint64_t _nOffPol = 0;
     const auto & EP = this->get(i);
-    const Uint N = EP.ndata();
-    for(Uint j=0; j<N; ++j)
+    const uint64_t N = EP.ndata();
+    for(uint64_t j=0; j<N; ++j)
       _nOffPol += EP.offPolicImpW[j] > 1+C || EP.offPolicImpW[j] < 1-C;
     if(_nOffPol > tol*N)
     {
@@ -356,11 +356,11 @@ Uint MemoryBuffer::clearOffPol(const Real C, const Real tol)
   return nStoredSteps();
 }
 
-MiniBatch MemoryBuffer::sampleMinibatch(const Uint batchSize,
-                                        const Uint stepID)
+MiniBatch MemoryBuffer::sampleMinibatch(const uint64_t batchSize,
+                                        const uint64_t stepID)
 {
   assert(sampler);
-  std::vector<Uint> sampleEID(batchSize), sampleT(batchSize);
+  std::vector<uint64_t> sampleEID(batchSize), sampleT(batchSize);
   sampler->sample(sampleEID, sampleT);
   assert( batchSize == sampleEID.size() && batchSize == sampleT.size() );
   {
@@ -375,11 +375,11 @@ MiniBatch MemoryBuffer::sampleMinibatch(const Uint batchSize,
   MiniBatch ret(batchSize);
 
   #pragma omp parallel for schedule(static)
-  for(Uint b=0; b<batchSize; ++b)
+  for(uint64_t b=0; b<batchSize; ++b)
   {
     ret.episodes[b] = episodes[ sampleEID[b] ].get();
     ret.episodes[b]->setSampled(sampleT[b]);
-    const Uint nEpSteps = ret.episodes[b]->nsteps();
+    const uint64_t nEpSteps = ret.episodes[b]->nsteps();
     if (settings.bSampleEpisodes)
     {
       // check that we may have to update estimators from S_{0} to S_{T_1}
@@ -391,9 +391,9 @@ MiniBatch MemoryBuffer::sampleMinibatch(const Uint batchSize,
     else
     {
       // if t=0 always zero recurrent steps, t=1 one, and so on, up to nMaxBPTT
-      const Uint nnBPTT = settings.nnBPTTseq;
+      const uint64_t nnBPTT = settings.nnBPTTseq;
       const bool bRecurrent = settings.bRecurrent || MDP.isPartiallyObservable;
-      const Uint nRecur = bRecurrent? std::min(nnBPTT, sampleT[b]) : 0;
+      const uint64_t nRecur = bRecurrent? std::min(nnBPTT, sampleT[b]) : 0;
       // prepare to compute from step t-reccurrentwindow up to t+1
       // because some methods may require tnext.
       // todo: add option for n-steps ahead
@@ -402,7 +402,7 @@ MiniBatch MemoryBuffer::sampleMinibatch(const Uint batchSize,
       ret.sampledTimeStep[b] = sampleT[b];
     }
     // number of states to process ( also, see why we used sampleT[b]+2 )
-    const Uint nSteps = ret.endTimeStep[b] - ret.begTimeStep[b];
+    const uint64_t nSteps = ret.endTimeStep[b] - ret.begTimeStep[b];
     ret.resizeStep(b, nSteps);
   }
   const std::vector<Episode*> & sampleE = ret.episodes;
@@ -411,10 +411,10 @@ MiniBatch MemoryBuffer::sampleMinibatch(const Uint batchSize,
   const bool bReqImpSamp = bRequireImportanceSampling();
 
   #pragma omp parallel for schedule(static) // collapse(2)
-  for(Uint b=0; b<batchSize; ++b)
+  for(uint64_t b=0; b<batchSize; ++b)
   {
     const Episode& EP = * sampleE[b];
-    for(Sint t=ret.begTimeStep[b]; t<ret.endTimeStep[b]; ++t)
+    for(int64_t t=ret.begTimeStep[b]; t<ret.endTimeStep[b]; ++t)
     {
       ret.state(b, t)  = EP.standardizedState<nnReal>(t);
       ret.reward(b, t) = EP.scaledReward(t);
@@ -437,7 +437,7 @@ bool MemoryBuffer::bRequireImportanceSampling() const
   return sampler->requireImportanceWeights();
 }
 
-MiniBatch MemoryBuffer::agentToMinibatch(const Uint ID)
+MiniBatch MemoryBuffer::agentToMinibatch(const uint64_t ID)
 {
   MiniBatch ret(1);
   ret.episodes[0] = inProgress[ID].get();
@@ -446,19 +446,19 @@ MiniBatch MemoryBuffer::agentToMinibatch(const Uint ID)
     ret.begTimeStep[0] = 0;        // prepare to compute for steps from init
     ret.endTimeStep[0] = inProgress[ID]->nsteps(); // to current step
   } else {
-    const Uint currStep = inProgress[ID]->nsteps() - 1;
+    const uint64_t currStep = inProgress[ID]->nsteps() - 1;
     // if t=0 always zero recurrent steps, t=1 one, and so on, up to nMaxBPTT
     const bool bRecurr = settings.bRecurrent || MDP.isPartiallyObservable;
-    const Uint nRecurr = bRecurr? std::min(settings.nnBPTTseq, currStep) : 0;
+    const uint64_t nRecurr = bRecurr? std::min(settings.nnBPTTseq, currStep) : 0;
     // prepare to compute from step t-reccurrentwindow up to t
     ret.begTimeStep[0] = currStep - nRecurr;
     ret.endTimeStep[0] = currStep + 1;
   }
   ret.sampledTimeStep[0] = inProgress[ID]->nsteps() - 1;
   // number of states to process ( also, see why we used sampleT[b]+2 )
-  const Uint nSteps = ret.endTimeStep[0] - ret.begTimeStep[0];
+  const uint64_t nSteps = ret.endTimeStep[0] - ret.begTimeStep[0];
   ret.resizeStep(0, nSteps);
-  for(Sint t=ret.begTimeStep[0]; t<ret.endTimeStep[0]; ++t)
+  for(int64_t t=ret.begTimeStep[0]; t<ret.endTimeStep[0]; ++t)
   {
     ret.state(0, t) = inProgress[ID]->standardizedState<nnReal>(t);
     ret.reward(0, t) = inProgress[ID]->scaledReward(t);
@@ -533,7 +533,7 @@ void MemoryBuffer::getMetrics(std::ostringstream& buff)
     Utilities::real2SS(buff, std::sqrt(stats.avgSquaredErr), 6, 1);
     Utilities::real2SS(buff, stats.maxAbsError, 6, 1);
     if(stats.countReturnsEstimateUpdates > 0) {
-      const Sint nRet = std::max((Sint) 1, stats.countReturnsEstimateUpdates);
+      const int64_t nRet = std::max((int64_t) 1, stats.countReturnsEstimateUpdates);
       const Real eRet = std::max(EPS, stats.sumReturnsEstimateErrors);
       Utilities::real2SS(buff, std::sqrt(eRet/nRet), 6, 1);
       stats.countReturnsEstimateUpdates = 0;
@@ -593,7 +593,7 @@ void MemoryBuffer::checkNData()
 {
   #ifndef NDEBUG
     long cntSamp = 0;
-    for(Uint i=0; i<episodes.size(); ++i) {
+    for(uint64_t i=0; i<episodes.size(); ++i) {
       cntSamp += episodes[i]->ndata();
     }
     assert(counters.nTransitions == cntSamp);

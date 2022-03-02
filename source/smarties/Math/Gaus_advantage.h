@@ -17,7 +17,7 @@ namespace smarties
 struct Gaussian_advantage
 {
   using PosDefFunction = SoftPlus;
-  static Uint compute_nL(const ActionInfo& aI) {
+  static uint64_t compute_nL(const ActionInfo& aI) {
     return 1 + 2*aI.dim();
   }
 
@@ -29,10 +29,10 @@ struct Gaussian_advantage
 
   static void setInitial(const ActionInfo& aI, Rvec& initBias) {
     initBias.push_back(-1);
-    for(Uint e=1; e<compute_nL(aI); e++) initBias.push_back(1);
+    for(uint64_t e=1; e<compute_nL(aI); e++) initBias.push_back(1);
   }
 
-  const Uint start_coefs, nA, nL;
+  const uint64_t start_coefs, nA, nL;
   const Rvec netOutputs;
   const Real coef;
   const Rvec matrix;
@@ -40,7 +40,7 @@ struct Gaussian_advantage
   const Continuous_policy * const policy;
 
   //Normalized quadratic advantage, with own mean
-  Gaussian_advantage(const std::vector<Uint>& starts, const ActionInfo& aI,
+  Gaussian_advantage(const std::vector<uint64_t>& starts, const ActionInfo& aI,
                      const Rvec& out, const Continuous_policy*const pol) :
     start_coefs(starts[0]), nA(aI.dim()), nL(compute_nL(aI)), netOutputs(out),
     coef(extract_coefs(netOutputs, starts[0])),
@@ -49,16 +49,16 @@ struct Gaussian_advantage
 
 private:
 
-  static Rvec extract_matrix(const Rvec& net, const Uint start, const Uint nA)
+  static Rvec extract_matrix(const Rvec& net, const uint64_t start, const uint64_t nA)
   {
     Rvec ret = Rvec(2*nA);
-    for(Uint i=0; i<2*nA; ++i)
+    for(uint64_t i=0; i<2*nA; ++i)
       ret[i] = PosDefFunction::_eval(net[start +1 +i]);
 
     return ret;
   }
 
-  static Real extract_coefs(const Rvec& net, const Uint start)
+  static Real extract_coefs(const Rvec& net, const uint64_t start)
   {
     return PosDefFunction::_eval(net[start]);
   }
@@ -66,7 +66,7 @@ private:
   void grad_matrix(Rvec& G, const Real err) const
   {
     G[start_coefs] *= err * PosDefFunction::_evalDiff(netOutputs[start_coefs]);
-    for (Uint i=0, ind=start_coefs+1; i<2*nA; ++i, ++ind)
+    for (uint64_t i=0, ind=start_coefs+1; i<2*nA; ++i, ++ind)
        G[ind] *= err * PosDefFunction::_evalDiff(netOutputs[ind]);
   }
 
@@ -82,7 +82,7 @@ public:
   Real coefMixRatio(const Rvec&A, const Rvec&V) const
   {
     Real ret = 1;
-    for (Uint i=0; i<nA; ++i)
+    for (uint64_t i=0; i<nA; ++i)
       ret *= std::sqrt(A[i]/(A[i]+V[i]))/2 +std::sqrt(A[i+nA]/(A[i+nA]+V[i]))/2;
     return ret;
   }
@@ -96,7 +96,7 @@ public:
     const Real expect = - coefMixRatio(matrix, policy->getVariance());
     G[start_coefs] += orig + expect;
 
-    for (Uint i=0, ind=start_coefs+1; i<nA; ++i, ++ind) {
+    for (uint64_t i=0, ind=start_coefs+1; i<nA; ++i, ++ind) {
       const Real m = policy->getMean(i), p1 = matrix[i], p2 = matrix[i+nA];
       G[ind]   = a[i]>m ? orig * coef * std::pow((a[i]-m)/p1, 2) / 2 : 0;
       G[ind+nA]= a[i]<m ? orig * coef * std::pow((a[i]-m)/p2, 2) / 2 : 0;
@@ -118,8 +118,8 @@ public:
   {
     assert(act.size()==nA); assert(mean.size()==nA); assert(mat.size()==2*nA);
     Real ret = 0;
-    for (Uint i=0; i<nA; ++i) {
-      const Uint matind = act[i]>mean[i] ? i : i+nA;
+    for (uint64_t i=0; i<nA; ++i) {
+      const uint64_t matind = act[i]>mean[i] ? i : i+nA;
       ret += std::pow(act[i]-mean[i], 2)/mat[matind];
     }
     return ret;

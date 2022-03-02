@@ -570,7 +570,7 @@ struct Continuous_policy
 {
   typedef Rvec Action_t;
   const ActionInfo & aInfo;
-  const Uint startMean, startStdev, nA;
+  const uint64_t startMean, startStdev, nA;
   const Rvec netOutputs;
   const std::vector<std::unique_ptr<Base1Dpolicy>> policiesVector;
   using BoundedPol = SquashedNormalPolicy;
@@ -579,7 +579,7 @@ struct Continuous_policy
   std::vector<std::unique_ptr<Base1Dpolicy>> make_policies()
   {
     std::vector<std::unique_ptr<Base1Dpolicy>> ret;
-    for (Uint i=0; i<aInfo.dim(); ++i) {
+    for (uint64_t i=0; i<aInfo.dim(); ++i) {
       if(aInfo.isBounded(i))
         ret.emplace_back(std::make_unique<BoundedPol>(
           aInfo, netOutputs, i, startMean, startStdev) );
@@ -591,14 +591,14 @@ struct Continuous_policy
     return ret;
   }
 
-  static Uint compute_nA(const ActionInfo& aI) {
+  static uint64_t compute_nA(const ActionInfo& aI) {
     assert(aI.dim()); return aI.dim();
   }
-  static Uint compute_nPol(const ActionInfo & aI) {
+  static uint64_t compute_nPol(const ActionInfo & aI) {
     return 2 * aI.dim();
   }
   static void setInitial_noStdev(const ActionInfo& aI, Rvec& initBias) {
-    for(Uint e=0; e<aI.dim(); e++) initBias.push_back(0);
+    for(uint64_t e=0; e<aI.dim(); e++) initBias.push_back(0);
   }
   static void setInitial_Stdev(const ActionInfo& aI, Rvec&O, Real S) {
     if(S < std::numeric_limits<float>::epsilon()) {
@@ -606,7 +606,7 @@ struct Continuous_policy
              "this should not be happening. Revise setting explNoise.\n");
       S = std::numeric_limits<float>::epsilon();
     }
-    for(Uint i=0; i<aI.dim(); ++i)
+    for(uint64_t i=0; i<aI.dim(); ++i)
         if(aI.isBounded(i)) O.push_back(BoundedPol::initial_Stdev(aI, S));
         else                O.push_back(NormalPolicy::initial_Stdev(aI, S));
   }
@@ -620,7 +620,7 @@ struct Continuous_policy
   static Rvec map2unbounded(const ActionInfo& aI, const Rvec & action) {
     Rvec ret = action;
     assert(action.size() == aI.dim());
-    for(Uint i=0; i<aI.dim(); ++i)
+    for(uint64_t i=0; i<aI.dim(); ++i)
         if(aI.isBounded(i)) ret[i] = BoundedPol::ClipFunction::_inv(ret[i]);
     return ret;
   }
@@ -641,7 +641,7 @@ struct Continuous_policy
     nA(aI.dim()), netOutputs(nnOut), policiesVector(make_policies()) { }
 
   Continuous_policy(
-    const std::vector<Uint>& inds, const ActionInfo& aI, const Rvec& nnOut) :
+    const std::vector<uint64_t>& inds, const ActionInfo& aI, const Rvec& nnOut) :
     aInfo(aI), startMean(inds[0]), startStdev(inds.size()>1? inds[1] : 0),
     nA(aI.dim()), netOutputs(nnOut), policiesVector(make_policies()) { }
 
@@ -693,7 +693,7 @@ struct Continuous_policy
 
   Rvec policyGradient(const Rvec& act, const Real coef = 1) const {
     Rvec ret(2*nA);
-    for (Uint i=0; i<nA; ++i) {
+    for (uint64_t i=0; i<nA; ++i) {
       const auto PGi = policiesVector[i]->gradLogP(act, coef, netOutputs);
       ret[i] = PGi[0]; ret[i + nA] = PGi[1];
     }
@@ -708,7 +708,7 @@ struct Continuous_policy
   }
   Rvec KLDivGradient(const Rvec& beta, const Real coef = 1) const {
     Rvec ret(2*nA);
-    for (Uint i=0; i<nA; ++i) {
+    for (uint64_t i=0; i<nA; ++i) {
       const auto PGi = policiesVector[i]->gradKLdiv(beta, coef, netOutputs);
       ret[i] = PGi[0]; ret[i + nA] = PGi[1];
     }
@@ -717,7 +717,7 @@ struct Continuous_policy
 
   Rvec fixExplorationGrad(const Real target) const {
     Rvec ret(2*nA);
-    for (Uint i=0; i<nA; ++i) {
+    for (uint64_t i=0; i<nA; ++i) {
       const auto PGi = policiesVector[i]->fixExplorationGrad(target,netOutputs);
       ret[i] = PGi[0]; ret[i + nA] = PGi[1];
     }
@@ -727,7 +727,7 @@ struct Continuous_policy
   void makeNetworkGrad(Rvec& netGradient, const Rvec& totPolicyGrad) const
   {
     assert(netGradient.size()>=startMean+nA && totPolicyGrad.size() == 2*nA);
-    for (Uint i=0; i<nA; ++i) {
+    for (uint64_t i=0; i<nA; ++i) {
       const auto indMean = startMean + i, indStd = startStdev + i;
       assert(netOutputs.size() > indMean && netGradient.size() > indMean);
       netGradient[indMean] = totPolicyGrad[i];
@@ -747,7 +747,7 @@ struct Continuous_policy
 
   Rvec getVector() const {
     Rvec beta(2*nA);
-    for (Uint i=0; i<nA; ++i) {
+    for (uint64_t i=0; i<nA; ++i) {
       beta[i] = policiesVector[i]->getMean();
       beta[i + nA] = policiesVector[i]->getStdev();
     }
@@ -756,21 +756,21 @@ struct Continuous_policy
 
   Rvec getMean() const {
     Rvec mean(nA);
-    for (Uint i=0; i<nA; ++i) mean[i] = getMean(i);
+    for (uint64_t i=0; i<nA; ++i) mean[i] = getMean(i);
     return mean;
   }
-  Real getMean(const Uint comp_id) const {
+  Real getMean(const uint64_t comp_id) const {
     return policiesVector[comp_id]->getMean();
   }
   Rvec getVariance() const {
     Rvec var(nA);
-    for (Uint i=0; i<nA; ++i) var[i] = getVariance(i);
+    for (uint64_t i=0; i<nA; ++i) var[i] = getVariance(i);
     return var;
   }
-  Real getStdev(const Uint comp_id) const {
+  Real getStdev(const uint64_t comp_id) const {
     return policiesVector[comp_id]->getStdev();
   }
-  Real getVariance(const Uint comp_id) const {
+  Real getVariance(const uint64_t comp_id) const {
     return std::pow(policiesVector[comp_id]->getStdev(), 2);
   }
 
@@ -780,10 +780,10 @@ struct Continuous_policy
     Rvec act(nA);
     if (agent.MDP.bAgentsShareNoise) {
         const Rvec noiseVec = agent.sampleActionNoise();
-        for (Uint i=0; i<nA; ++i)
+        for (uint64_t i=0; i<nA; ++i)
             act[i] = policiesVector[i]->sample(noiseVec[i]);
     } else
-        for (Uint i=0; i<nA; ++i)
+        for (uint64_t i=0; i<nA; ++i)
             act[i] = policiesVector[i]->sample(agent.generator);
     return act;
   }
@@ -794,17 +794,17 @@ struct Continuous_policy
     Rvec act(nA);
     if (agent.MDP.bAgentsShareNoise) {
       const Rvec noiseVec = agent.sampleActionNoise();
-      for (Uint i=0; i<nA; ++i)
+      for (uint64_t i=0; i<nA; ++i)
         act[i] = policiesVector[i]->sample_OrnsteinUhlenbeck(state, noiseVec[i]);
     } else
-      for (Uint i=0; i<nA; ++i)
+      for (uint64_t i=0; i<nA; ++i)
         act[i] = policiesVector[i]->sample_OrnsteinUhlenbeck(state, agent.generator);
     return act;
   }
 
   Rvec sample(std::mt19937& gen) const {
     Rvec action(nA);
-    for (Uint i=0; i<nA; ++i) action[i] = policiesVector[i]->sample(gen);
+    for (uint64_t i=0; i<nA; ++i) action[i] = policiesVector[i]->sample(gen);
     return action;
   }
 };

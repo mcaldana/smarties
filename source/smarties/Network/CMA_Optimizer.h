@@ -22,7 +22,7 @@ protected:
   const std::vector<nnReal> popWeights = initializePopWeights(populationSize);
   const nnReal mu_eff = initializeMuEff(popWeights, populationSize);
   const nnReal sumW = initializeSumW(popWeights, populationSize);
-  const Uint mpiDistribOpsStride = Utilities::roundUpSimd( std::ceil( weights->nParams/(Real)learn_size ) );
+  const uint64_t mpiDistribOpsStride = Utilities::roundUpSimd( std::ceil( weights->nParams/(Real)learn_size ) );
   const std::vector<std::shared_ptr<Parameters>> popNoiseVectors =
                                        allocManyParams(weights, populationSize);
   const std::shared_ptr<Parameters> momNois = weights->allocateEmptyAlike();
@@ -32,13 +32,13 @@ protected:
   const std::shared_ptr<Parameters> pathDif = weights->allocateEmptyAlike();
   const std::shared_ptr<Parameters> diagCov = weights->allocateEmptyAlike();
 
-  const std::vector<Uint> pStarts, pCounts;
-  const Uint pStart, pCount;
+  const std::vector<uint64_t> pStarts, pCounts;
+  const uint64_t pStart, pCount;
   std::vector<std::shared_ptr<Saru>> generators;
   std::vector<std::shared_ptr<std::mt19937>> stdgens;
   MPI_Request paramRequest = MPI_REQUEST_NULL;
   std::vector<Real> losses = std::vector<Real>(populationSize, 0);
-  //Uint Nswap = 0;
+  //uint64_t Nswap = 0;
 
   nnReal computeStdDevScale() const
   {
@@ -58,52 +58,52 @@ public:
   int restart(const NetLoadF_t& F, const std::string fname) override;
 
  protected:
-  static inline std::vector<nnReal> initializePopWeights(const Uint popSize)
+  static inline std::vector<nnReal> initializePopWeights(const uint64_t popSize)
   {
     std::vector<nnReal> ret(popSize);
     nnReal sum = 0;
-    for(Uint i=0; i<popSize; ++i)
+    for(uint64_t i=0; i<popSize; ++i)
     {
       ret[i] = std::log(0.5*(popSize+1)) - std::log(i+1.0);
       sum += std::max( ret[i], (nnReal) 0 );
     }
-    for(Uint i=0; i<popSize; ++i) ret[i] /= sum;
+    for(uint64_t i=0; i<popSize; ++i) ret[i] /= sum;
     return ret;
   }
 
   static inline Real initializeMuEff(const std::vector<nnReal>popW,
-                                     const Uint popSize)
+                                     const uint64_t popSize)
   {
     Real sum = 0, sumsq = 0;
-    for(Uint i=0; i<popSize; ++i) {
+    for(uint64_t i=0; i<popSize; ++i) {
       const nnReal W = std::max( popW[i], (nnReal) 0 );
       sumsq += W * W; sum += W;
     }
     return sum * sum / sumsq;
   }
 
-  static inline Real initializeSumW(const std::vector<nnReal>popW, const Uint popsz)
+  static inline Real initializeSumW(const std::vector<nnReal>popW, const uint64_t popsz)
   {
     Real sum = 0;
-    for(Uint i=0; i<popsz; ++i) sum += popW[i];
+    for(uint64_t i=0; i<popsz; ++i) sum += popW[i];
     return sum;
   }
   void getMetrics(std::ostringstream& buff) override;
   void getHeaders(std::ostringstream& buff, const std::string nnName) override;
 
-  std::vector<Uint> computePstarts() const
+  std::vector<uint64_t> computePstarts() const
   {
-    std::vector<Uint> ret (learn_size, 0);
-    for (Uint i=0; i < learn_size; ++i)
+    std::vector<uint64_t> ret (learn_size, 0);
+    for (uint64_t i=0; i < learn_size; ++i)
       ret[i] = mpiDistribOpsStride * i;
     return ret;
   }
-  std::vector<Uint> computePcounts() const
+  std::vector<uint64_t> computePcounts() const
   {
-    std::vector<Uint> ret (learn_size, 0);
-    for (Uint i=0; i < learn_size; ++i) {
-      const Uint end = std::min(mpiDistribOpsStride*(i+1), weights->nParams);
-      const Uint beg = mpiDistribOpsStride * i;
+    std::vector<uint64_t> ret (learn_size, 0);
+    for (uint64_t i=0; i < learn_size; ++i) {
+      const uint64_t end = std::min(mpiDistribOpsStride*(i+1), weights->nParams);
+      const uint64_t beg = mpiDistribOpsStride * i;
       ret[i] = end - beg;
     }
     return ret;
@@ -117,7 +117,7 @@ public:
     return completed;
   }
 
-  void startAllGather(const Uint ID);
+  void startAllGather(const uint64_t ID);
 };
 
 } // end namespace smarties

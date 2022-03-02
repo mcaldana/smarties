@@ -20,23 +20,23 @@ class Network
 {
 public:
   const std::vector<std::unique_ptr<Layer>> layers;
-  const Uint nInputs, nOutputs, nLayers = layers.size();
+  const uint64_t nInputs, nOutputs, nLayers = layers.size();
   const std::shared_ptr<Parameters> weights;
-  Uint getnOutputs() const { return nOutputs; }
-  Uint getnInputs()  const { return nInputs;  }
-  Uint getnLayers()  const { return nLayers;  }
+  uint64_t getnOutputs() const { return nOutputs; }
+  uint64_t getnInputs()  const { return nInputs;  }
+  uint64_t getnLayers()  const { return nLayers;  }
 
   static std::shared_ptr<Parameters> allocParameters(
-        const std::vector<std::unique_ptr<Layer>>& layers, const Uint mpiSize)
+        const std::vector<std::unique_ptr<Layer>>& layers, const uint64_t mpiSize)
   {
-    std::vector<Uint> nWeight, nBiases;
+    std::vector<uint64_t> nWeight, nBiases;
     for(const auto & l : layers) l->requiredParameters(nWeight, nBiases);
     return std::make_shared<Parameters>(nWeight, nBiases, mpiSize);
   }
   static std::unique_ptr<Activation> allocActivation(
         const std::vector<std::unique_ptr<Layer>>& layers)
   {
-    std::vector<Uint> sizes, output, input;
+    std::vector<uint64_t> sizes, output, input;
     for(const auto & l : layers) l->requiredActivation(sizes, output, input);
     return std::make_unique<Activation>(sizes, output, input);
   }
@@ -50,29 +50,29 @@ public:
   }
 
   void allocTimeSeries(std::vector<std::unique_ptr<Activation>>& series,
-                       const Uint N) const
+                       const uint64_t N) const
   {
     if (series.size() < N)
-      for(Uint j=series.size(); j<N; ++j)
+      for(uint64_t j=series.size(); j<N; ++j)
         series.emplace_back( allocActivation() );
     assert(series.size()>=N);
 
-    for(Uint j=0; j<series.size(); ++j) {
+    for(uint64_t j=0; j<series.size(); ++j) {
       series[j]->clearErrors();
       series[j]->written = false;
     }
 
     #ifndef NDEBUG
-    for(Uint j=0; j<series.size(); ++j) assert(not series[j]->written);
+    for(uint64_t j=0; j<series.size(); ++j) assert(not series[j]->written);
     #endif
   }
 
-  Network(const Uint _nInp, const Uint _nOut,
+  Network(const uint64_t _nInp, const uint64_t _nOut,
           std::vector<std::unique_ptr<Layer>>& _layers,
           const std::shared_ptr<Parameters>& _weights);
 
   std::vector<Real> forward(const std::vector<Real>& _inp,
-    const std::vector<std::unique_ptr<Activation>>& timeSeries, const Uint step,
+    const std::vector<std::unique_ptr<Activation>>& timeSeries, const uint64_t step,
     const Parameters*const _weights = nullptr) const
   {
     assert(timeSeries.size() > step);
@@ -107,7 +107,7 @@ public:
     assert(input.size()==nInputs && layers.size()==nLayers);
     currStep->setInput(input);
     const Parameters*const W = _weights==nullptr? weights.get() : _weights;
-    for(Uint j=0; j<nLayers; ++j) layers[j]->forward(prevStep, currStep, W);
+    for(uint64_t j=0; j<nLayers; ++j) layers[j]->forward(prevStep, currStep, W);
     currStep->written = true;
     return currStep->getOutput();
   }
@@ -133,7 +133,7 @@ public:
 
   template<typename T>
   std::vector<Real> backPropToLayer(const std::vector<T>& gradient,
-                                    const Uint toLayerID,
+                                    const uint64_t toLayerID,
                                     const Activation*const activation,
                                     const Parameters*const _weights) const
   {
@@ -142,7 +142,7 @@ public:
     activation->setOutputDelta(gradient);
     assert(activation->written && activation->input[toLayerID]);
     //backprop from output layer down to layer we want grad for
-    for(Uint i=layers.size()-1; i>toLayerID; --i)
+    for(uint64_t i=layers.size()-1; i>toLayerID; --i)
       layers[i]->backward(nullptr, activation, nullptr, nullptr, W);
     return activation->getInputGradient(toLayerID);
   }
@@ -154,7 +154,7 @@ public:
   */
   void backProp(const std::vector<std::unique_ptr<Activation>>& series,
                 const std::vector<std::unique_ptr<Activation>>& conditioning,
-                const Uint stepLastError, const Parameters*const _grad,
+                const uint64_t stepLastError, const Parameters*const _grad,
                 const Parameters*const _weights = nullptr) const
   {
     assert(stepLastError <= series.size());
@@ -166,19 +166,19 @@ public:
     if (stepLastError == 1)
     { //errors placed at first time step
       assert(series[0]->written);
-      for (Sint i = (Sint)layers.size()-1; i>=0; --i)
+      for (int64_t i = (int64_t)layers.size()-1; i>=0; --i)
         layers[i]->backward(nullptr, series[0].get(), nullptr, _grad, W);
     }
     else
     {
-      const Uint T = stepLastError - 1;
-      for (Sint i = (Sint)layers.size()-1; i>=0; --i)
+      const uint64_t T = stepLastError - 1;
+      for (int64_t i = (int64_t)layers.size()-1; i>=0; --i)
       {
         assert(series[T]->written);
         layers[i]->backward(conditioning[T-1].get(), series[T].get(), nullptr,
                             _grad, W);
 
-        for (Uint k = T-1; k>0; --k) {
+        for (uint64_t k = T-1; k>0; --k) {
         assert(series[k]->written);
         layers[i]->backward(conditioning[k-1].get(), series[k].get(),
                             series[k+1].get(), _grad, W);
@@ -193,7 +193,7 @@ public:
   }
 
   void backProp(const std::vector<std::unique_ptr<Activation>>& series,
-                const Uint stepLastError, const Parameters*const _grad,
+                const uint64_t stepLastError, const Parameters*const _grad,
                 const Parameters*const _weights = nullptr) const
   {
     backProp(series, series, stepLastError, _grad, _weights);
@@ -221,7 +221,7 @@ public:
     assert(currStep->written);
     _gradient->written = true;
     const Parameters*const W = _weights == nullptr ? weights.get() : _weights;
-    for (Sint i = (Sint)layers.size()-1; i>=0; --i)
+    for (int64_t i = (int64_t)layers.size()-1; i>=0; --i)
       layers[i]->backward(prevStep, currStep, nextStep, _gradient, W);
   }
 

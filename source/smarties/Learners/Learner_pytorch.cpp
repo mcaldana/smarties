@@ -20,8 +20,8 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-// PYBIND11_MAKE_OPAQUE(smarties::Uint);
-// PYBIND11_MAKE_OPAQUE(std::vector<smarties::Uint>);
+// PYBIND11_MAKE_OPAQUE(smarties::uint64_t);
+// PYBIND11_MAKE_OPAQUE(std::vector<smarties::uint64_t>);
 
 PYBIND11_MAKE_OPAQUE(smarties::NNvec);
 PYBIND11_MAKE_OPAQUE(std::vector< smarties::NNvec >);
@@ -46,7 +46,7 @@ PYBIND11_EMBEDDED_MODULE(pybind11_embed, m) {
         .def_readwrite("R", &MiniBatch::R)
         .def_readwrite("PERW", &MiniBatch::PERW);
 
-    // py::bind_vector<std::vector<Uint>>(m, "VectorUint");
+    // py::bind_vector<std::vector<uint64_t>>(m, "Vectoruint64_t");
 
     py::bind_vector<NNvec>(m, "NNvec");
     py::bind_vector<std::vector<NNvec>>(m, "VectorNNvec");
@@ -163,7 +163,7 @@ void Learner_pytorch::spawnTrainTasks()
 
   profiler->stop_start("SAMP");
 
-  const Uint nThr = distrib.nThreads, CS =  batchSize / nThr;
+  const uint64_t nThr = distrib.nThreads, CS =  batchSize / nThr;
   const MiniBatch MB = data->sampleMinibatch(batchSize, nGradSteps() );
 
   // IMPORTANT !
@@ -175,9 +175,9 @@ void Learner_pytorch::spawnTrainTasks()
   auto locals = py::dict("vectorMiniBatch"_a=vectorMiniBatch_ref, "CmaxRet"_a=CmaxRet, "CinvRet"_a=CinvRet);
 
   // UPDATING RETRACE ESTIMATES
-  for (Uint bID=0; bID<batchSize; ++bID) {
+  for (uint64_t bID=0; bID<batchSize; ++bID) {
     Episode& S = MB.getEpisode(bID);
-    const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+    const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
     //Update Qret of eps' last state if sampled T-1. (and V(s_T) for truncated ep)
     if( S.isTruncated(t+1) ) {
       assert( t+1 == S.ndata() );

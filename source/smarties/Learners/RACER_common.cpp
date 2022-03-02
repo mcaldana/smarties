@@ -40,20 +40,20 @@ void RACER<Advantage_t, Policy_t, Action_t>::prepareCMALoss()
   std::vector<Real> avgRho(batchSize, 0), avgAdv(batchSize, 0);
 
   #pragma omp parallel for schedule(static)
-  for (Uint b=0; b<batchSize; ++b) {
+  for (uint64_t b=0; b<batchSize; ++b) {
     Real avgRho_ = 0, avgAdv_ = 0;
-    for(Uint w=0; w<ESpopSize; ++w) {
+    for(uint64_t w=0; w<ESpopSize; ++w) {
       avgRho_ += rhos[b][w]; avgAdv_ += advs[b][w];
     }
     avgRho[b] = avgRho_ / ESpopSize; avgAdv[b] = avgAdv_ / ESpopSize;
   }
 
-  //for(Uint b=0; b<batchSize; ++b) { aR[b] = rhos[b][0]; aA[b] = advs[b][0]; }
+  //for(uint64_t b=0; b<batchSize; ++b) { aR[b] = rhos[b][0]; aA[b] = advs[b][0]; }
   const auto isFar = [&](const Real&W) {return W >= CmaxRet || W <= CinvRet;};
 
   #pragma omp parallel for schedule(static)
-  for (Uint w=0; w<ESpopSize; ++w)
-  for (Uint b=0; b<batchSize; ++b) {
+  for (uint64_t w=0; w<ESpopSize; ++w)
+  for (uint64_t b=0; b<batchSize; ++b) {
     const Real clipRho = std::max(CinvRet, std::min(rhos[b][w], CmaxRet));
     const Real clipAdv = isFar(rhos[b][w]) ? avgAdv[b] : advs[b][w];
     const Real criticError = std::min((Real) 1, avgRho[b]) * clipAdv;
@@ -73,9 +73,9 @@ void RACER<Advantage_t, Policy_t, Action_t>::setupNet()
   const std::type_info& actT = typeid(Action_t);
   const std::type_info& vecT = typeid(Rvec);
   const bool isContinuous = actT.hash_code() == vecT.hash_code();
-  std::vector<Uint> nouts = count_outputs(aInfo);
+  std::vector<uint64_t> nouts = count_outputs(aInfo);
   #ifdef RACER_simpleSigma // variance not dependent on state
-    const Uint varianceSize = nouts.back();
+    const uint64_t varianceSize = nouts.back();
     if(isContinuous) nouts.pop_back();
   #endif
 
@@ -116,38 +116,38 @@ void RACER<Advantage_t, Policy_t, Action_t>::setupNet()
 
 // Template specializations. From now on, nothing relevant to algorithm itself.
 
-template<> std::vector<Uint>
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+template<> std::vector<uint64_t>
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 count_outputs(const ActionInfo& aI) {
-  return std::vector<Uint>{1, aI.dimDiscrete(), aI.dimDiscrete()};
+  return std::vector<uint64_t>{1, aI.dimDiscrete(), aI.dimDiscrete()};
 }
-template<> std::vector<Uint>
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+template<> std::vector<uint64_t>
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 count_pol_starts(const ActionInfo& aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = Utilities::count_indices(sizes);
-  return std::vector<Uint>{indices[2]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = Utilities::count_indices(sizes);
+  return std::vector<uint64_t>{indices[2]};
 }
-template<> std::vector<Uint>
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+template<> std::vector<uint64_t>
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 count_adv_starts(const ActionInfo& aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = Utilities::count_indices(sizes);
-  return std::vector<Uint>{indices[1]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = Utilities::count_indices(sizes);
+  return std::vector<uint64_t>{indices[1]};
 }
-template<> Uint
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+template<> uint64_t
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 getnOutputs(const ActionInfo& aI) {
   return 1 + aI.dimDiscrete() + aI.dimDiscrete();
 }
-template<> Uint
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+template<> uint64_t
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 getnDimPolicy(const ActionInfo& aI) {
   return aI.dimDiscrete();
 }
 
 template<>
-RACER<Discrete_advantage, Discrete_policy, Uint>::
+RACER<Discrete_advantage, Discrete_policy, uint64_t>::
 RACER(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
   Learner_approximator(MDP_, S, D), net_outputs(count_outputs(aInfo)),
   pol_start(count_pol_starts(aInfo)), adv_start(count_adv_starts(aInfo))
@@ -171,33 +171,33 @@ RACER(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Param_advantage, Continuous_policy, Rvec>::
 count_outputs(const ActionInfo& aI) {
-  const Uint nL = Param_advantage::compute_nL(aI);
-  return std::vector<Uint>{1, nL, aI.dim(), aI.dim()};
+  const uint64_t nL = Param_advantage::compute_nL(aI);
+  return std::vector<uint64_t>{1, nL, aI.dim(), aI.dim()};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Param_advantage, Continuous_policy, Rvec>::
 count_pol_starts(const ActionInfo& aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = Utilities::count_indices(sizes);
-  return std::vector<Uint>{indices[2], indices[3]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = Utilities::count_indices(sizes);
+  return std::vector<uint64_t>{indices[2], indices[3]};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Param_advantage, Continuous_policy, Rvec>::
 count_adv_starts(const ActionInfo& aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = Utilities::count_indices(sizes);
-  return std::vector<Uint>{indices[1]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = Utilities::count_indices(sizes);
+  return std::vector<uint64_t>{indices[1]};
 }
-template<> Uint
+template<> uint64_t
 RACER<Param_advantage, Continuous_policy, Rvec>::
 getnOutputs(const ActionInfo& aI) {
-  const Uint nL = Param_advantage::compute_nL(aI);
+  const uint64_t nL = Param_advantage::compute_nL(aI);
   return 1 + nL + 2*aI.dim();
 }
-template<> Uint
+template<> uint64_t
 RACER<Param_advantage, Continuous_policy, Rvec>::
 getnDimPolicy(const ActionInfo& aI) {
   return 2*aI.dim();
@@ -229,29 +229,29 @@ RACER(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Zero_advantage, Continuous_policy, Rvec>::
 count_outputs(const ActionInfo& aI) {
-  return std::vector<Uint>{1, aI.dim(), aI.dim()};
+  return std::vector<uint64_t>{1, aI.dim(), aI.dim()};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Zero_advantage, Continuous_policy, Rvec>::
 count_pol_starts(const ActionInfo& aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = Utilities::count_indices(sizes);
-  return std::vector<Uint>{indices[1], indices[2]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = Utilities::count_indices(sizes);
+  return std::vector<uint64_t>{indices[1], indices[2]};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Zero_advantage, Continuous_policy, Rvec>::
 count_adv_starts(const ActionInfo& aI) {
-  return std::vector<Uint>();
+  return std::vector<uint64_t>();
 }
-template<> Uint
+template<> uint64_t
 RACER<Zero_advantage, Continuous_policy, Rvec>::
 getnOutputs(const ActionInfo& aI) {
   return 1 + 2*aI.dim();
 }
-template<> Uint
+template<> uint64_t
 RACER<Zero_advantage, Continuous_policy, Rvec>::
 getnDimPolicy(const ActionInfo& aI) {
   return 2*aI.dim();
@@ -281,33 +281,33 @@ RACER(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
 
 ////////////////////////////////////////////////////////////////////////////////
 #if 0
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Mixture_advantage<NEXPERTS>, Gaussian_mixture<NEXPERTS>, Rvec>::
 count_outputs(const ActionInfo*const aI) {
-  const Uint nL = Mixture_advantage<NEXPERTS>::compute_nL(aI);
-  return std::vector<Uint>{1, nL, NEXPERTS, NEXPERTS*aI->dim(), NEXPERTS*aI->dim()};
+  const uint64_t nL = Mixture_advantage<NEXPERTS>::compute_nL(aI);
+  return std::vector<uint64_t>{1, nL, NEXPERTS, NEXPERTS*aI->dim(), NEXPERTS*aI->dim()};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Mixture_advantage<NEXPERTS>, Gaussian_mixture<NEXPERTS>, Rvec>::
 count_pol_starts(const ActionInfo*const aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = count_indices(sizes);
-  return std::vector<Uint>{indices[2], indices[3], indices[4]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = count_indices(sizes);
+  return std::vector<uint64_t>{indices[2], indices[3], indices[4]};
 }
-template<> std::vector<Uint>
+template<> std::vector<uint64_t>
 RACER<Mixture_advantage<NEXPERTS>, Gaussian_mixture<NEXPERTS>, Rvec>::
 count_adv_starts(const ActionInfo*const aI) {
-  const std::vector<Uint> sizes = count_outputs(aI);
-  const std::vector<Uint> indices = count_indices(sizes);
-  return std::vector<Uint>{indices[1]};
+  const std::vector<uint64_t> sizes = count_outputs(aI);
+  const std::vector<uint64_t> indices = count_indices(sizes);
+  return std::vector<uint64_t>{indices[1]};
 }
-template<> Uint
+template<> uint64_t
 RACER<Mixture_advantage<NEXPERTS>, Gaussian_mixture<NEXPERTS>, Rvec>::
 getnOutputs(const ActionInfo*const aI) {
-  const Uint nL = Mixture_advantage<NEXPERTS>::compute_nL(aI);
+  const uint64_t nL = Mixture_advantage<NEXPERTS>::compute_nL(aI);
   return 1 + nL + NEXPERTS*(1 +2*aI->dim());
 }
-template<> Uint
+template<> uint64_t
 RACER<Mixture_advantage<NEXPERTS>, Gaussian_mixture<NEXPERTS>, Rvec>::
 getnDimPolicy(const ActionInfo*const aI) {
   return NEXPERTS*(1 +2*aI->dim());

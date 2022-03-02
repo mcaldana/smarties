@@ -20,8 +20,8 @@ struct ExecutionInfo;
 
 struct StatsTracker
 {
-  const Uint n_stats;
-  const Uint nThreads, learn_rank;
+  const uint64_t n_stats;
+  const uint64_t nThreads, learn_rank;
 
   long double cnt = 0;
   LDvec avg = LDvec(n_stats, 0);
@@ -32,9 +32,9 @@ struct StatsTracker
   LDvec instMean, instStdv;
   unsigned long nStep = 0;
 
-  StatsTracker(const Uint N, const ExecutionInfo&);
+  StatsTracker(const uint64_t N, const ExecutionInfo&);
 
-  void track_vector(const Rvec& grad, const Uint thrID) const;
+  void track_vector(const Rvec& grad, const uint64_t thrID) const;
 
   void advance();
 
@@ -44,7 +44,7 @@ struct StatsTracker
 
   void finalize(const LDvec&oldM, const LDvec&oldS);
 
-  void reduce_stats(const std::string& base, const Uint iter = 0);
+  void reduce_stats(const std::string& base, const uint64_t iter = 0);
 
 };
 

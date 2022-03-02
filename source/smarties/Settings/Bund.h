@@ -103,17 +103,17 @@ static constexpr Real CLIP_LEARNR = 1e-3;
 
 //#define PRINT_ALL_RANKS
 
-static constexpr Uint PRFL_DMPFRQ = 50; // regulates how frequently print profiler info
+static constexpr uint64_t PRFL_DMPFRQ = 50; // regulates how frequently print profiler info
 
 // hint to reserve memory for the network workspaces, can be breached
-static constexpr Uint MAX_SEQ_LEN = 1200;
+static constexpr uint64_t MAX_SEQ_LEN = 1200;
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// NETWORK ALLOC TWEAKS /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-static constexpr Uint VEC_WIDTH = 32;
-static constexpr Uint ARY_WIDTH = ( VEC_WIDTH / sizeof(nnReal) );
+static constexpr uint64_t VEC_WIDTH = 32;
+static constexpr uint64_t ARY_WIDTH = ( VEC_WIDTH / sizeof(nnReal) );
 static constexpr int simdWidth = VEC_WIDTH / sizeof(nnReal);
 static constexpr nnReal nnEPS = std::numeric_limits<float>::epsilon();
 

@@ -30,7 +30,7 @@ static inline Real expectedValue(const Rvec& Qhats,
   #ifdef DQN_USE_POLICY
     Discrete_policy_t<Exp> pol({0}, aI, Qhats);
     Real ret = 0;
-    for(Uint i=0; i<aI.dimDiscrete(); ++i) ret += pol.probs[i] * Qtildes[i];
+    for(uint64_t i=0; i<aI.dimDiscrete(); ++i) ret += pol.probs[i] * Qtildes[i];
     return ret;
   #else
     return Qtildes[ Utilities::maxInd(Qhats) ];
@@ -66,16 +66,16 @@ void DQN::selectAction(const MiniBatch& MB, Agent& agent)
 
   #ifdef DQN_USE_POLICY
     const Discrete_policy_t<Exp> POL({0}, aInfo, Qs);
-    const Uint act = POL.selectAction(agent, settings.explNoise>0);
+    const uint64_t act = POL.selectAction(agent, settings.explNoise>0);
     const Rvec MU = POL.getVector();
   #else // from paper : annealed epsilon-greedy
     const Real anneal = annealingFactor(), eps = settings.explNoise;
     const Real annealedEps = bTrain? anneal + (1-anneal)*eps : eps;
-    const Uint greedyAct = Utilities::maxInd(Qs);
+    const uint64_t greedyAct = Utilities::maxInd(Qs);
     Rvec MU(policyVecDim, annealedEps/nA);
     MU[greedyAct] += 1-annealedEps;
     std::uniform_real_distribution<Real> dis(0.0, 1.0);
-    Uint act = greedyAct;
+    uint64_t act = greedyAct;
     if(dis(agent.generator) < annealedEps)
       act = nA * dis(agent.generator);
   #endif
@@ -147,14 +147,14 @@ void DQN::setupTasks(TaskQueue& tasks)
   tasks.add(stepComplete);
 }
 
-void DQN::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+void DQN::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
 
   if(thrID==0) profiler->start("FWD");
 
   const Rvec Qs = networks[0]->forward(bID, t);
-  const Uint actt = aInfo.actionMessage2label(MB.action(bID,t));
+  const uint64_t actt = aInfo.actionMessage2label(MB.action(bID,t));
   assert(actt < Qs.size()); // enough to store advantages and value
 
   Real TD_error;
@@ -197,7 +197,7 @@ void DQN::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
     if(CmaxRet>1) { // then refer
       if(isOff) gradient = Rvec(nA, 0); // grad clipping as if pol gradient
       const Rvec penGrad = POL.KLDivGradient(MB.mu(bID,t), -1);
-      for(Uint i=0; i<nA; ++i)
+      for(uint64_t i=0; i<nA; ++i)
         gradient[i] = beta * gradient[i] + (1-beta) * penGrad[i];
     }
     MB.setMseDklImpw(bID, t, TD_error, DKL, RHO, CmaxRet, CinvRet);

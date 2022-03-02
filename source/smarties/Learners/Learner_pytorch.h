@@ -25,8 +25,8 @@ class Learner_pytorch: public Learner
  public:
   const bool bSampleEpisodes = settings.bSampleEpisodes;
   // hyper-parameters:
-  const Uint batchSize = settings.batchSize_local;
-  const Uint ESpopSize = settings.ESpopSize;
+  const uint64_t batchSize = settings.batchSize_local;
+  const uint64_t ESpopSize = settings.ESpopSize;
   const Real learnR = settings.learnrate;
   const Real explNoise = settings.explNoise;
 
@@ -39,7 +39,7 @@ class Learner_pytorch: public Learner
  public:
   Learner_pytorch(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_);
 
-  static Uint getnDimPolicy(const ActionInfo*const aI)
+  static uint64_t getnDimPolicy(const ActionInfo*const aI)
   {
     return 2*aI->dim();
   }

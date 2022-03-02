@@ -21,29 +21,29 @@ class MGULayer: public Layer
   // state(t)  =    tanh (Wsr [forget(t) * output(t-1)] + Wsf input(t) + bs
   // output(t) = (1 - forget(t)) * output(t-1) + forget(t) * state(t)
   // Where * and + are element-wise ops, weight-vector multiplication is implied
-  const Uint nInputs, nCells;
+  const uint64_t nInputs, nCells;
   const std::unique_ptr<Function> cell;
 
  public:
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override
   {
     //cell, input, forget, output gates all linked to inp and prev LSTM output
     nWeight.push_back(2*nCells * (nInputs + nCells) );
     nBiases.push_back(2*nCells);
   }
 
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(2*nCells);
     bOutputs.push_back(bOutput);
     bInputs.push_back(bInput);
   }
   void biasInitialValues(const std::vector<Real> init) override { }
 
-  MGULayer(Uint _ID, Uint _nInputs, Uint _nCells, std::string funcType,
-    bool bOut, Uint iLink) :  Layer(_ID, _nCells, bOut, false, iLink),
+  MGULayer(uint64_t _ID, uint64_t _nInputs, uint64_t _nCells, std::string funcType,
+    bool bOut, uint64_t iLink) :  Layer(_ID, _nCells, bOut, false, iLink),
     nInputs(_nInputs), nCells(_nCells), cell(makeFunction(funcType)) {
     spanCompInpGrads = _nInputs;
     if(_nCells % ARY_WIDTH)
@@ -77,10 +77,10 @@ class MGULayer: public Layer
       memcpy(linearOutput, para->B(ID), 2*nCells*sizeof(nnReal)); // add bias
       const nnReal* const inputs = curr->Y(ID-link); // output of prev layer
       const nnReal* const weight = para->W(ID); // weights for feedforward op
-      for (Uint i = 0; i < nInputs; ++i) {
+      for (uint64_t i = 0; i < nInputs; ++i) {
         const nnReal* const W = weight + (2*nCells)*i;
         #pragma omp simd aligned(linearOutput, inputs, W : VEC_WIDTH)
-        for (Uint o = 0; o < 2*nCells; ++o) linearOutput[o] += inputs[i] * W[o];
+        for (uint64_t o = 0; o < 2*nCells; ++o) linearOutput[o] += inputs[i] * W[o];
       }
     }
 
@@ -90,22 +90,22 @@ class MGULayer: public Layer
       const nnReal* const inputs = prev->Y(ID);
       // recurrent connection weights are shifted by (2*nCells)*nInputs:
       const nnReal* const weightRecur = para->W(ID) +(2*nCells)*nInputs;
-      for (Uint i=0; i<nCells; ++i) {
+      for (uint64_t i=0; i<nCells; ++i) {
         const nnReal* const Wfr = weightRecur + (2*nCells)*i;
         #pragma omp simd aligned(forget, inputs, Wfr : VEC_WIDTH)
-        for(Uint o=0; o<nCells; ++o) forget[o] += Wfr[o] * inputs[i];
+        for(uint64_t o=0; o<nCells; ++o) forget[o] += Wfr[o] * inputs[i];
       }
       Sigm::_eval(forget, forget, nCells);
       // state = tanh [ Wsr (forget \elemProd prevOut) + Wsf inputs + b ]
-      for (Uint i=0; i<nCells; ++i) {
+      for (uint64_t i=0; i<nCells; ++i) {
         const nnReal* const Wsr = weightRecur + (2*nCells)*i +nCells;
         #pragma omp simd aligned(state, forget, inputs, Wsr : VEC_WIDTH)
-        for(Uint o=0; o<nCells; ++o) state[o] += Wsr[o] * inputs[i] * forget[i];
+        for(uint64_t o=0; o<nCells; ++o) state[o] += Wsr[o] * inputs[i] * forget[i];
       }
       Tanh::_eval(state, state, nCells);
       // output = = (1 - forget) \elemProd prevOut + forget \elemProd state
       #pragma omp simd aligned(output, forget, inputs, state : VEC_WIDTH)
-      for (Uint o=0; o<nCells; ++o)
+      for (uint64_t o=0; o<nCells; ++o)
         output[o] = forget[o]*state[o] + (1-forget[o])*inputs[o];
     }
     else
@@ -113,7 +113,7 @@ class MGULayer: public Layer
       Sigm::_eval(forget, forget, nCells);
       Tanh::_eval(state, state, nCells);
       #pragma omp simd aligned(output, forget, state : VEC_WIDTH)
-      for (Uint o=0; o<nCells; ++o) output[o] = forget[o]*state[o];
+      for (uint64_t o=0; o<nCells; ++o) output[o] = forget[o]*state[o];
     }
   }
 
@@ -137,7 +137,7 @@ class MGULayer: public Layer
 
     // 1) dLdS = forget * dLdO * tanh' (so it is actually dLoss d InputToTanh)
     #pragma omp simd aligned(dLdS, dLdO, forget, state : VEC_WIDTH)
-    for (Uint o=0; o<nCells; ++o)
+    for (uint64_t o=0; o<nCells; ++o)
       dLdS[o] = dLdO[o] * forget[o] * (1-state[o]*state[o]);
 
     // 2) dLdFprevOut = Wsr * dLdS
@@ -154,7 +154,7 @@ class MGULayer: public Layer
 
     // 3) dLdF = ((state - prevOut) * dLdO + dLdFprevOut * prevOut) * sigm'
     #pragma omp simd aligned(dLdF,prevOut,state,dLdO,forget,dLdFprevOut : VEC_WIDTH)
-    for (Uint o=0; o<nCells; ++o)
+    for (uint64_t o=0; o<nCells; ++o)
       dLdF[o] = ((state[o]-prevOut[o])*dLdO[o] + dLdFprevOut[o]*prevOut[o]) *
                 forget[o] * (1-forget[o]);
 
@@ -162,7 +162,7 @@ class MGULayer: public Layer
     if(prev not_eq nullptr)
     {
       #pragma omp simd aligned(dLdprevOut,forget,dLdO,dLdFprevOut : VEC_WIDTH)
-      for(Uint o=0; o<nCells; ++o) // first two terms of 4) are elt-wise:
+      for(uint64_t o=0; o<nCells; ++o) // first two terms of 4) are elt-wise:
         dLdprevOut[o] += (1-forget[o])*dLdO[o] + forget[o]*dLdFprevOut[o];
       // last term of 4):
       const nnReal * const Wfr = para->W(ID) +(2*nCells)*nInputs;
@@ -199,7 +199,7 @@ class MGULayer: public Layer
     {
       nnReal* const grad_b = grad->B(ID);
       #pragma omp simd aligned(grad_b, dLdF, dLdS : VEC_WIDTH)
-      for(Uint o=0; o<nCells; ++o) {
+      for(uint64_t o=0; o<nCells; ++o) {
         grad_b[o]        += dLdF[o];
         grad_b[o+nCells] += dLdS[o];
       }
@@ -207,10 +207,10 @@ class MGULayer: public Layer
 
     {
       const nnReal* const inputs = curr->Y(ID-link);
-      for(Uint i=0; i<nInputs;  ++i) {
+      for(uint64_t i=0; i<nInputs;  ++i) {
         nnReal* const G = grad->W(ID) + (2*nCells)*i;
         #pragma omp simd aligned(G, inputs, dLdF, dLdS : VEC_WIDTH)
-        for(Uint o=0; o<nCells; ++o) {
+        for(uint64_t o=0; o<nCells; ++o) {
           G[o]        += inputs[i] * dLdF[o];
           G[o+nCells] += inputs[i] * dLdS[o];
         }
@@ -219,10 +219,10 @@ class MGULayer: public Layer
 
     if(prev not_eq nullptr)
     {
-      for(Uint i=0; i<nCells; ++i) {
+      for(uint64_t i=0; i<nCells; ++i) {
         nnReal* const G = grad->W(ID) + 2*nCells * (nInputs + i);
         #pragma omp simd aligned(G, prevOut, dLdF, dLdS, forget : VEC_WIDTH)
-        for(Uint o=0; o<nCells; ++o) {
+        for(uint64_t o=0; o<nCells; ++o) {
           G[o]        += prevOut[i] * dLdF[o];
           G[o+nCells] += prevOut[i] * dLdS[o] * forget[i];
         }
@@ -238,12 +238,12 @@ class MGULayer: public Layer
     std::uniform_real_distribution<nnReal> dis(-init, init);
     { // forget gate starts open, inp/out gates are closed
       nnReal* const BB = W->B(ID);
-      for(Uint o=0*nCells; o<1*nCells; ++o) BB[o] = 0+LSTM_PRIME_FAC;
-      for(Uint o=1*nCells; o<2*nCells; ++o) BB[o] = 0;
+      for(uint64_t o=0*nCells; o<1*nCells; ++o) BB[o] = 0+LSTM_PRIME_FAC;
+      for(uint64_t o=1*nCells; o<2*nCells; ++o) BB[o] = 0;
     }
     {
       nnReal* const weight = W->W(ID);
-      for(Uint w=0; w<2*nCells*(nInputs+nCells); ++w) weight[w] = dis(G);
+      for(uint64_t w=0; w<2*nCells*(nInputs+nCells); ++w) weight[w] = dis(G);
     }
   }
 
@@ -252,9 +252,9 @@ class MGULayer: public Layer
   {
     const nnReal* const bias = para->B(ID);
     const nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<2*nCells * (nInputs+nCells); ++n)
+    for (uint64_t n=0; n<2*nCells * (nInputs+nCells); ++n)
       *(tmp++) = (float) weight[n];
-    for (Uint n=0; n<2*nCells; ++n)
+    for (uint64_t n=0; n<2*nCells; ++n)
       *(tmp++) = (float) bias[n];
     return 2*nCells * (nInputs+nCells + 1);
   }
@@ -263,9 +263,9 @@ class MGULayer: public Layer
   {
     nnReal* const bias = para->B(ID);
     nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<2*nCells * (nInputs+nCells); ++n)
+    for (uint64_t n=0; n<2*nCells * (nInputs+nCells); ++n)
       weight[n] = (nnReal) *(tmp++);
-    for (Uint n=0; n<2*nCells; ++n)
+    for (uint64_t n=0; n<2*nCells; ++n)
       bias[n] = (nnReal) *(tmp++);
     return 2*nCells * (nInputs+nCells + 1);
   }

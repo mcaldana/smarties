@@ -42,8 +42,8 @@ void Learner_approximator::spawnTrainTasks()
 
   profiler->start("SAMP");
   debugL("Sample the replay memory");
-  const Uint batchSize=settings.batchSize_local, ESpopSize=settings.ESpopSize;
-  const Uint nThr = distrib.nThreads, CS =  batchSize / nThr;
+  const uint64_t batchSize=settings.batchSize_local, ESpopSize=settings.ESpopSize;
+  const uint64_t nThr = distrib.nThreads, CS =  batchSize / nThr;
   const MiniBatch MB = data->sampleMinibatch(batchSize, nGradSteps() );
   profiler->stop();
 
@@ -51,9 +51,9 @@ void Learner_approximator::spawnTrainTasks()
   if(settings.bSampleEpisodes)
   {
     #pragma omp parallel for collapse(2) schedule(dynamic,1) num_threads(nThr)
-    for (Uint wID=0; wID<ESpopSize; ++wID)
-    for (Uint bID=0; bID<batchSize; ++bID) {
-      const Uint thrID = omp_get_thread_num();
+    for (uint64_t wID=0; wID<ESpopSize; ++wID)
+    for (uint64_t bID=0; bID<batchSize; ++bID) {
+      const uint64_t thrID = omp_get_thread_num();
       for (const auto & net : networks ) net->load(MB, bID, wID);
       Train(MB, wID, bID);
       // backprop, from last net to first for dependencies in gradients:
@@ -65,9 +65,9 @@ void Learner_approximator::spawnTrainTasks()
   else
   {
     #pragma omp parallel for collapse(2) schedule(static,CS) num_threads(nThr)
-    for (Uint wID=0; wID<ESpopSize; ++wID)
-    for (Uint bID=0; bID<batchSize; ++bID) {
-      const Uint thrID = omp_get_thread_num();
+    for (uint64_t wID=0; wID<ESpopSize; ++wID)
+    for (uint64_t bID=0; bID<batchSize; ++bID) {
+      const uint64_t thrID = omp_get_thread_num();
       for (const auto & net : networks ) net->load(MB, bID, wID);
       Train(MB, wID, bID);
       // backprop, from last net to first for dependencies in gradients:
@@ -132,9 +132,9 @@ void Learner_approximator::restart()
 
 void Learner_approximator::save()
 {
-  //const Uint currStep = nGradSteps()+1;
+  //const uint64_t currStep = nGradSteps()+1;
   //const Real freqSave = freqPrint * PRFL_DMPFRQ;
-  //const Uint freqBackup = std::ceil(settings.saveFreq / freqSave)*freqSave;
+  //const uint64_t freqBackup = std::ceil(settings.saveFreq / freqSave)*freqSave;
   const bool bBackup = false; // currStep % freqBackup == 0;
   for(const auto & net : networks) net->save(learner_name, bBackup);
 
@@ -150,11 +150,11 @@ bool Learner_approximator::createEncoder()
 {
   auto & encoderLayers = settings.encoderLayerSizes;
   // remove zero-sized layers: (i.e. if settings reads 'encoderLayerSizes: 0')
-  for(Uint i=0; i<encoderLayers.size(); ++i)
+  for(uint64_t i=0; i<encoderLayers.size(); ++i)
     if (encoderLayers[i] == 0)
       encoderLayers.erase(encoderLayers.begin() + i);
 
-  const Uint nPreProcLayers = encoderLayers.size();
+  const uint64_t nPreProcLayers = encoderLayers.size();
   if ( MDP.conv2dDescriptors.size() == 0 and nPreProcLayers == 0 )
     return false; // no preprocessing
 
@@ -188,7 +188,7 @@ void Learner_approximator::setupDataCollectionTasks(TaskQueue& tasks)
 
 /*
 
-void Learner_approximator::createSharedEncoder(const Uint privateNum)
+void Learner_approximator::createSharedEncoder(const uint64_t privateNum)
 {
   if(input->net not_eq nullptr) {
     delete input->opt; input->opt = nullptr;

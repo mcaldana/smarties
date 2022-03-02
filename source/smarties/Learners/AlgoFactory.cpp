@@ -34,7 +34,7 @@ inline static void printLogfile(std::ostringstream&o, std::string fn, int rank)
   fout.close();
 }
 
-inline static std::ifstream findSettingsFile(ExecutionInfo& D, const Uint ID)
+inline static std::ifstream findSettingsFile(ExecutionInfo& D, const uint64_t ID)
 {
   char currDirectory[512];
   getcwd(currDirectory, 512);
@@ -58,7 +58,7 @@ inline static std::ifstream findSettingsFile(ExecutionInfo& D, const Uint ID)
 }
 
 std::unique_ptr<Learner> createLearner(
-  const Uint learnerID, MDPdescriptor& MDP, ExecutionInfo& distrib
+  const uint64_t learnerID, MDPdescriptor& MDP, ExecutionInfo& distrib
 )
 {
   char lName[256];
@@ -106,7 +106,7 @@ std::unique_ptr<Learner> createLearner(
       "==========================================================================\n"
       );
 
-      using RACER_discrete = RACER<Discrete_advantage, Discrete_policy, Uint>;
+      using RACER_discrete = RACER<Discrete_advantage, Discrete_policy, uint64_t>;
       MDP.policyVecDim = RACER_discrete::getnDimPolicy(aInfo);
       o << MDP.dimAction << " " << MDP.policyVecDim;
       printLogfile(o, "problem_size.log", distrib.world_rank);
@@ -200,7 +200,7 @@ std::unique_ptr<Learner> createLearner(
       "                           Discrete-action PPO                            \n"
       "==========================================================================\n"
       );
-      using PPO_discrete = PPO<Discrete_policy, Uint>;
+      using PPO_discrete = PPO<Discrete_policy, uint64_t>;
       MDP.policyVecDim = PPO_discrete::getnDimPolicy(&aInfo);
       o << MDP.dimAction << " " << MDP.policyVecDim;
       printLogfile(o, "problem_size.log", distrib.world_rank);
@@ -308,7 +308,7 @@ std::unique_ptr<Learner> createLearner(
       "==========================================================================\n"
       );
 
-      using CMA_discrete = CMALearner<Uint>;
+      using CMA_discrete = CMALearner<uint64_t>;
       MDP.policyVecDim = CMA_discrete::getnDimPolicy(&aInfo);
       o << MDP.dimAction << " " << MDP.policyVecDim;
       printLogfile(o, "problem_size.log", distrib.world_rank);

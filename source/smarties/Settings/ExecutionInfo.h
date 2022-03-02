@@ -37,15 +37,15 @@ struct ExecutionInfo
 
   char initial_runDir[1024];
   MPI_Comm world_comm;
-  Uint world_rank;
-  Uint world_size;
+  uint64_t world_rank;
+  uint64_t world_size;
 
   int threadSafety = -1;
   bool bAsyncMPI;
   mutable std::mutex mpiMutex;
 
-  Sint thisWorkerGroupID = -1;
-  Uint nAgents;
+  int64_t thisWorkerGroupID = -1;
+  uint64_t nAgents;
 
   MPI_Comm master_workers_comm = MPI_COMM_NULL;
   MPI_Comm workerless_masters_comm = MPI_COMM_NULL;
@@ -53,21 +53,21 @@ struct ExecutionInfo
   MPI_Comm environment_app_comm = MPI_COMM_NULL;
 
   bool bIsMaster;
-  Uint nOwnedEnvironments = 0;
-  Uint nOwnedAgentsPerAlgo = 1;
-  Uint nForkedProcesses2spawn = 0;
+  uint64_t nOwnedEnvironments = 0;
+  uint64_t nOwnedAgentsPerAlgo = 1;
+  uint64_t nForkedProcesses2spawn = 0;
   //random number generators (one per thread)
   mutable std::vector<std::mt19937> generators;
 
   // Parsed. For comments look at .cpp
-  Uint nThreads = 1;
-  Uint nMasters = 1;
-  Uint nWorkers = 1;
-  Uint nEnvironments = 1;
-  Uint workerProcessesPerEnv = 1;
-  Uint randSeed = 0;
-  Uint nTrainSteps = 10000000; // if training: total number of env time steps
-  Uint nEvalEpisodes = 0; // if not training: number of episode to evaluate on
+  uint64_t nThreads = 1;
+  uint64_t nMasters = 1;
+  uint64_t nWorkers = 1;
+  uint64_t nEnvironments = 1;
+  uint64_t workerProcessesPerEnv = 1;
+  uint64_t randSeed = 0;
+  uint64_t nTrainSteps = 10000000; // if training: total number of env time steps
+  uint64_t nEvalEpisodes = 0; // if not training: number of episode to evaluate on
 
   std::string nStepPappSett = "0";
   std::string appSettings = "";

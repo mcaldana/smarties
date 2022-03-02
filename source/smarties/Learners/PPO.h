@@ -22,9 +22,9 @@ template<typename Policy_t, typename Action_t>
 class PPO : public Learner_approximator
 {
  protected:
-  const Uint nA = Policy_t::compute_nA(aInfo);
-  const std::vector<Uint> pol_outputs;
-  const std::vector<Uint> pol_indices = Utilities::count_indices(pol_outputs);
+  const uint64_t nA = Policy_t::compute_nA(aInfo);
+  const std::vector<uint64_t> pol_outputs;
+  const std::vector<uint64_t> pol_indices = Utilities::count_indices(pol_outputs);
   const long nHorizon = settings.maxTotObsNum;
   const long nEpochs = settings.batchSize/settings.obsPerStep;
   const Real CmaxPol = settings.clipImpWeight;
@@ -39,12 +39,12 @@ class PPO : public Learner_approximator
   Approximator* actor;
   Approximator* critc;
 
-  void Train(const MiniBatch& MB, const Uint, const Uint) const override;
+  void Train(const MiniBatch& MB, const uint64_t, const uint64_t) const override;
 
   void updatePenalizationCoef();
 
-  static std::vector<Uint> count_pol_outputs(const ActionInfo*const aI);
-  static std::vector<Uint> count_pol_starts(const ActionInfo*const aI);
+  static std::vector<uint64_t> count_pol_outputs(const ActionInfo*const aI);
+  static std::vector<uint64_t> count_pol_starts(const ActionInfo*const aI);
 
   void updateDKL_target(const bool farPolSample, const Real DivKL) const;
   void setupNet();
@@ -74,13 +74,13 @@ class PPO : public Learner_approximator
   void selectAction(const MiniBatch& MB, Agent& agent) override;
   void processTerminal(const MiniBatch& MB, Agent& agent) override;
 
-  static Uint getnDimPolicy(const ActionInfo*const aI);
+  static uint64_t getnDimPolicy(const ActionInfo*const aI);
 };
 
-template<> Uint PPO<Discrete_policy, Uint>::
+template<> uint64_t PPO<Discrete_policy, uint64_t>::
 getnDimPolicy(const ActionInfo*const aI);
 
-template<> Uint PPO<Continuous_policy, Rvec>::
+template<> uint64_t PPO<Continuous_policy, Rvec>::
 getnDimPolicy(const ActionInfo*const aI);
 
 }

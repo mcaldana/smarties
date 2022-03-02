@@ -23,17 +23,17 @@ void Sampling::setMinMaxProb(const Real maxP, const Real minP) {
     RM->maxPriorityImpW = maxP;
 }
 
-void Sampling::IDtoSeqStep(std::vector<Uint>& seq, std::vector<Uint>& obs,
-  const std::vector<Uint>& sampledTsteps, const Uint nSeqs)
+void Sampling::IDtoSeqStep(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs,
+  const std::vector<uint64_t>& sampledTsteps, const uint64_t nSeqs)
 {
   // go through each element of sampledTsteps to find corresponding seq and obs
-  const Uint batchsize = seq.size();
+  const uint64_t batchsize = seq.size();
   assert(obs.size() == batchsize and sampledTsteps.size() == batchsize);
 
-  for (Uint k=0, i=0, prefix=0; k < nSeqs && i < batchsize; ++k)
+  for (uint64_t k=0, i=0, prefix=0; k < nSeqs && i < batchsize; ++k)
   {
     assert(sampledTsteps[i] >= prefix);
-    const Uint nsteps = episodes[k]->ndata();
+    const uint64_t nsteps = episodes[k]->ndata();
     while (i < batchsize and sampledTsteps[i] < prefix + nsteps)
     {
       // if ret[i]==prefix then obs 0 of k and so forth:
@@ -47,18 +47,18 @@ void Sampling::IDtoSeqStep(std::vector<Uint>& seq, std::vector<Uint>& obs,
 }
 
 Sample_uniform::Sample_uniform(std::vector<std::mt19937>&G, MemoryBuffer*const R, bool bSeq): Sampling(G,R,bSeq) {}
-void Sample_uniform::sample(std::vector<Uint>& seq, std::vector<Uint>& obs)
+void Sample_uniform::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
   assert(seq.size() == obs.size());
-  const Uint nBatch = obs.size();
+  const uint64_t nBatch = obs.size();
 
   if(bSampleEpisodes)
   {
-    const Uint nSeqs = nEpisodes();
-    std::uniform_int_distribution<Uint> distSeq(0, nSeqs-1);
+    const uint64_t nSeqs = nEpisodes();
+    std::uniform_int_distribution<uint64_t> distSeq(0, nSeqs-1);
     if (nSeqs >= 2*nBatch)
     {
-      std::vector<Uint>::iterator it = seq.begin();
+      std::vector<uint64_t>::iterator it = seq.begin();
       while(it not_eq seq.end())
       {
         std::generate(it, seq.end(), [&]() { return distSeq(gens[0]); } );
@@ -73,18 +73,18 @@ void Sample_uniform::sample(std::vector<Uint>& seq, std::vector<Uint>& obs)
       std::shuffle(seq.begin(), seq.end(), gens[0]);
       seq.resize(nBatch);
     }
-    const auto compare = [&](const Uint a, const Uint b) {
+    const auto compare = [&](const uint64_t a, const uint64_t b) {
       return episodes[a]->ndata() > episodes[b]->ndata();
     };
     std::sort(seq.begin(), seq.end(), compare);
-    for (Uint i=0; i<nBatch; ++i) obs[i] = episodes[seq[i]]->ndata() - 1;
+    for (uint64_t i=0; i<nBatch; ++i) obs[i] = episodes[seq[i]]->ndata() - 1;
   }
   else
   {
     const long nData = nTransitions();
-    std::uniform_int_distribution<Uint> distObs(0, nData-1);
-    std::vector<Uint> ret(nBatch);
-    std::vector<Uint>::iterator it = ret.begin();
+    std::uniform_int_distribution<uint64_t> distObs(0, nData-1);
+    std::vector<uint64_t> ret(nBatch);
+    std::vector<uint64_t>::iterator it = ret.begin();
     while(it not_eq ret.end())
     {
       std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
@@ -111,15 +111,15 @@ void TSample_impRank::prepare()
   const unsigned nSeqs = nEpisodes(), nData = nTransitions();
 
   std::vector<TupEST> errors(nData);
-  std::vector<Uint> prefixes(nSeqs);
+  std::vector<uint64_t> prefixes(nSeqs);
   // 1)
-  for(Uint i=0, prefix=0; i<nSeqs; ++i) {
+  for(uint64_t i=0, prefix=0; i<nSeqs; ++i) {
     const auto & EP = * episodes[i].get();
     prefixes[i] = prefix;
-    const Uint epNsteps = EP.ndata();
+    const uint64_t epNsteps = EP.ndata();
     const auto err_i = errors.data() + prefix;
     prefix += epNsteps;
-    for(Uint j=0; j<epNsteps; ++j)
+    for(uint64_t j=0; j<epNsteps; ++j)
       err_i[j] = std::make_tuple(EP.SquaredError(j), i, j);
   }
 
@@ -128,7 +128,7 @@ void TSample_impRank::prepare()
                           return std::get<0>(a) > std::get<0>(b); };
   //__gnu_parallel
   std::sort(errors.begin(), errors.end(), isAbeforeB);
-  //for(Uint i=0; i<errors.size(); ++i) cout << std::get<0>(errors[i]) << endl;
+  //for(uint64_t i=0; i<errors.size(); ++i) cout << std::get<0>(errors[i]) << endl;
 
   // 3)
   float minP = 1e9;
@@ -138,25 +138,25 @@ void TSample_impRank::prepare()
     // if samples never seen by optimizer the samples have high priority
     //const float P = std::get<0>(errors[i])>0 ? approxRsqrt(i+1) : 1;
     const float P = std::get<0>(errors[i])>0 ? 1/std::sqrt(std::sqrt(i+1)) : 1;
-    const Uint seq = std::get<1>(errors[i]), t = std::get<2>(errors[i]);
+    const uint64_t seq = std::get<1>(errors[i]), t = std::get<2>(errors[i]);
     episodes[seq]->priorityImpW[t] = P;
     probs[prefixes[seq] + t] = P;
     minP = std::min(minP, P);
   }
 
   setMinMaxProb(1, minP);
-  distObs = std::discrete_distribution<Uint>(probs.begin(), probs.end());
+  distObs = std::discrete_distribution<uint64_t>(probs.begin(), probs.end());
 }
 
-void TSample_impRank::sample(std::vector<Uint>& seq, std::vector<Uint>& obs)
+void TSample_impRank::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
   if(seq.size() not_eq obs.size()) die(" ");
 
   // Drawing of samples is either uniform (each sample has same prob)
   // or based on importance sampling. The latter is TODO
   const long nSeqs = nEpisodes();
-  std::vector<Uint> ret(seq.size());
-  std::vector<Uint>::iterator it = ret.begin();
+  std::vector<uint64_t> ret(seq.size());
+  std::vector<uint64_t>::iterator it = ret.begin();
   while(it not_eq ret.end())
   {
     std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
@@ -173,22 +173,22 @@ TSample_impErr::TSample_impErr(std::vector<std::mt19937>&G, MemoryBuffer*const R
 void TSample_impErr::prepare()
 {
   const float EPS = std::numeric_limits<float>::epsilon();
-  const Uint nSeqs = nEpisodes(), nData = nTransitions();
+  const uint64_t nSeqs = nEpisodes(), nData = nTransitions();
   std::vector<float> probs = std::vector<float>(nData, 1);
-  std::vector<Uint> prefixes(nSeqs);
-  for(Uint i=0, prefix=0; i<nSeqs; ++i) {
+  std::vector<uint64_t> prefixes(nSeqs);
+  for(uint64_t i=0, prefix=0; i<nSeqs; ++i) {
     prefixes[i] = prefix;
     prefix += episodes[i]->ndata();
   }
 
   float minP = 1e9, maxP = 0;
   #pragma omp parallel for schedule(dynamic) reduction(min:minP) reduction(max:maxP)
-  for(Uint i=0; i<nSeqs; ++i)
+  for(uint64_t i=0; i<nSeqs; ++i)
   {
     auto & EP = * episodes[i].get();
-    const Uint ndata = EP.ndata();
+    const uint64_t ndata = EP.ndata();
     const auto probs_i = probs.data() + prefixes[i];
-    for(Uint j=0; j<ndata; ++j)
+    for(uint64_t j=0; j<ndata; ++j)
     {
       const float deltasq = EP.SquaredError(j);
       assert(deltasq > 0);
@@ -202,17 +202,17 @@ void TSample_impErr::prepare()
   }
   setMinMaxProb(maxP, minP);
   // std::discrete_distribution handles normalizing by sum P
-  distObs = std::discrete_distribution<Uint>(probs.begin(), probs.end());
+  distObs = std::discrete_distribution<uint64_t>(probs.begin(), probs.end());
 }
-void TSample_impErr::sample(std::vector<Uint>& seq, std::vector<Uint>& obs)
+void TSample_impErr::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
   if(seq.size() not_eq obs.size()) die(" ");
 
   // Drawing of samples is either uniform (each sample has same prob)
   // or based on importance sampling. The latter is TODO
   const long nSeqs = nEpisodes();
-  std::vector<Uint> ret(seq.size());
-  std::vector<Uint>::iterator it = ret.begin();
+  std::vector<uint64_t> ret(seq.size());
+  std::vector<uint64_t>::iterator it = ret.begin();
   while(it not_eq ret.end())
   {
     std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
@@ -238,7 +238,7 @@ void Sample_impSeq::prepare()
   for(long i=0; i<nSeqs; ++i)
   {
     auto & EP = * episodes[i].get();
-    const Uint ndata = EP.ndata();
+    const uint64_t ndata = EP.ndata();
     //sampling P is episode's RMSE to the power beta=.5 times length of episode
     const float P = std::sqrt(std::sqrt(EP.avgSquaredErr + EPS)) * ndata;
     std::fill(EP.priorityImpW.begin(), EP.priorityImpW.end(), P);
@@ -250,47 +250,47 @@ void Sample_impSeq::prepare()
   setMinMaxProb(maxP, minP);
 
   // std::discrete_distribution handles normalizing by sum P
-  distObs = std::discrete_distribution<Uint>(probs.begin(), probs.end());
+  distObs = std::discrete_distribution<uint64_t>(probs.begin(), probs.end());
 }
-void Sample_impSeq::sample(std::vector<Uint>& seq, std::vector<Uint>& obs)
+void Sample_impSeq::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
   if(seq.size() not_eq obs.size()) die(" ");
-  const Uint nBatch = obs.size();
+  const uint64_t nBatch = obs.size();
 
   if(bSampleEpisodes)
   {
-    std::vector<Uint>::iterator it = seq.begin();
+    std::vector<uint64_t>::iterator it = seq.begin();
     while(it not_eq seq.end())
     {
       std::generate(it, seq.end(), [&]() { return distObs(gens[0]); } );
       std::sort( seq.begin(), seq.end() );
       it = std::unique( seq.begin(), seq.end() );
     }
-    const auto compare = [&](const Uint a, const Uint b) {
+    const auto compare = [&](const uint64_t a, const uint64_t b) {
       return episodes[a]->ndata() > episodes[b]->ndata();
     };
     std::sort(seq.begin(), seq.end(), compare);
-    for (Uint i=0; i<nBatch; ++i) obs[i] = episodes[seq[i]]->ndata() - 1;
+    for (uint64_t i=0; i<nBatch; ++i) obs[i] = episodes[seq[i]]->ndata() - 1;
   }
   else
   {
     std::uniform_real_distribution<float> distT(0, 1);
-    std::vector<std::pair<Uint, Uint>> S (nBatch);
+    std::vector<std::pair<uint64_t, uint64_t>> S (nBatch);
 
-    std::vector<std::pair<Uint, Uint>>::iterator it = S.begin();
+    std::vector<std::pair<uint64_t, uint64_t>>::iterator it = S.begin();
     while(it not_eq S.end())
     {
       std::generate(it, S.end(), [&] () {
-         const Uint _s = distObs(gens[0]);
-         const Uint _t = distT(gens[0]) * episodes[_s]->ndata();
-         return std::pair<Uint, Uint> {_s, _t};
+         const uint64_t _s = distObs(gens[0]);
+         const uint64_t _t = distT(gens[0]) * episodes[_s]->ndata();
+         return std::pair<uint64_t, uint64_t> {_s, _t};
         }
       );
       std::sort( S.begin(), S.end() );
       it = std::unique( S.begin(), S.end() );
     }
 
-    for (Uint i=0; i<nBatch; ++i) { seq[i] = S[i].first; obs[i] = S[i].second; }
+    for (uint64_t i=0; i<nBatch; ++i) { seq[i] = S[i].first; obs[i] = S[i].second; }
   }
 }
 bool Sample_impSeq::requireImportanceWeights() { return true; }

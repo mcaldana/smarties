@@ -35,7 +35,7 @@ struct MemoryBuffer
   const ExecutionInfo & distrib;
   const StateInfo sI = StateInfo(MDP);
   const ActionInfo aI = ActionInfo(MDP);
-  Uint learnID = 0;
+  uint64_t learnID = 0;
 
   // if clipImpWeight==0 do naive Exp Replay==0 do naive Exp Replay:
   Real beta = settings.clipImpWeight <= 0 ? 1 : 1e-4;
@@ -62,7 +62,7 @@ struct MemoryBuffer
 
   std::vector<std::unique_ptr<Episode>> episodes;
   std::vector<std::unique_ptr<Episode>> inProgress;
-  std::vector<Uint> lastSampledEps;
+  std::vector<uint64_t> lastSampledEps;
 
   const std::unique_ptr<Sampling> sampler;
   nnReal minPriorityImpW = 1;
@@ -81,7 +81,7 @@ struct MemoryBuffer
   void initialize();
 
   void clearAll();
-  Uint clearOffPol(const Real C, const Real tol);
+  uint64_t clearOffPol(const Real C, const Real tol);
 
   void restart(const std::string base);
   void save(const std::string base);
@@ -89,10 +89,10 @@ struct MemoryBuffer
   void getMetrics(std::ostringstream& buff);
   void getHeaders(std::ostringstream& buff);
 
-  MiniBatch sampleMinibatch(const Uint batchSize, const Uint stepID);
-  const std::vector<Uint>& lastSampledEpisodes() { return lastSampledEps; }
+  MiniBatch sampleMinibatch(const uint64_t batchSize, const uint64_t stepID);
+  const std::vector<uint64_t>& lastSampledEpisodes() { return lastSampledEps; }
 
-  MiniBatch agentToMinibatch(const Uint ID);
+  MiniBatch agentToMinibatch(const uint64_t ID);
 
   bool bRequireImportanceSampling() const;
 
@@ -126,15 +126,15 @@ struct MemoryBuffer
   void removeBackEpisode();
   void pushBackEpisode(std::unique_ptr<Episode> e);
 
-  Episode& get(const Uint ID) {
+  Episode& get(const uint64_t ID) {
     assert(episodes[ID]);
     return * episodes[ID].get();
   }
-  const Episode& get(const Uint ID) const {
+  const Episode& get(const uint64_t ID) const {
     assert(episodes[ID]);
     return * episodes[ID].get();
   }
-  Episode& getInProgress(const Uint ID) {
+  Episode& getInProgress(const uint64_t ID) {
     assert(inProgress[ID]);
     return * inProgress[ID].get();
   }

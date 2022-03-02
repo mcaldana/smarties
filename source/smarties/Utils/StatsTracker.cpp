@@ -17,7 +17,7 @@
 namespace smarties
 {
 
-StatsTracker::StatsTracker(const Uint N, const ExecutionInfo& distrib) :
+StatsTracker::StatsTracker(const uint64_t N, const ExecutionInfo& distrib) :
   n_stats(N), nThreads(distrib.nThreads),
   learn_rank(MPICommRank(distrib.learners_train_comm)), cntVec(nThreads, 0),
   avgVec(nThreads, LDvec(n_stats, 0)), stdVec(nThreads, LDvec(n_stats, 0))
@@ -25,11 +25,11 @@ StatsTracker::StatsTracker(const Uint N, const ExecutionInfo& distrib) :
   instMean.resize(n_stats, 0); instStdv.resize(n_stats, 0);
 }
 
-void StatsTracker::track_vector(const Rvec& grad, const Uint thrID) const
+void StatsTracker::track_vector(const Rvec& grad, const uint64_t thrID) const
 {
   assert(n_stats==grad.size());
   cntVec[thrID] += 1;
-  for (Uint i=0; i<n_stats; ++i) {
+  for (uint64_t i=0; i<n_stats; ++i) {
     avgVec[thrID][i] += grad[i];
     stdVec[thrID][i] += grad[i]*grad[i];
   }
@@ -41,9 +41,9 @@ void StatsTracker::advance()
   std::fill(std.begin(),  std.end(), 0);
   cnt = 0;
 
-  for (Uint i=0; i<nThreads; ++i) {
+  for (uint64_t i=0; i<nThreads; ++i) {
     cnt += cntVec[i];
-    for (Uint j=0; j<n_stats; ++j) {
+    for (uint64_t j=0; j<n_stats; ++j) {
       avg[j] += avgVec[i][j];
       std[j] += stdVec[i][j];
     }
@@ -56,7 +56,7 @@ void StatsTracker::advance()
 void StatsTracker::update()
 {
   cnt = std::max((long double)2.2e-16, cnt);
-  for (Uint j=0; j<n_stats; ++j) {
+  for (uint64_t j=0; j<n_stats; ++j) {
     const Real   mean = avg[j] / cnt;
     const Real sqmean = std[j] / cnt;
     std[j] = std::sqrt(sqmean); // - mean*mean
@@ -76,7 +76,7 @@ void StatsTracker::printToFile(const std::string& base)
     }
     else pFile = fopen((base + "_outGrad_stats.raw").c_str(), "ab");
     std::vector<float> printvals(n_stats*2);
-    for (Uint i=0; i<n_stats; ++i) {
+    for (uint64_t i=0; i<n_stats; ++i) {
       printvals[i]         = avg[i];
       printvals[i+n_stats] = std[i];
     }
@@ -90,14 +90,14 @@ void StatsTracker::finalize(const LDvec&oldM, const LDvec&oldS)
   instMean = avg;
   instStdv = std;
   nStep++;
-  for (Uint i=0; i<n_stats; ++i) {
+  for (uint64_t i=0; i<n_stats; ++i) {
     avg[i] = (1-CLIP_LEARNR)*oldM[i] +CLIP_LEARNR*avg[i];
     std[i] = (1-CLIP_LEARNR)*oldS[i] +CLIP_LEARNR*std[i];
     //stdVec[0][i]=std::max((1-CLIP_LEARNR)*oldstd[i], stdVec[0][i]);
   }
 }
 
-void StatsTracker::reduce_stats(const std::string& base, const Uint iter)
+void StatsTracker::reduce_stats(const std::string& base, const uint64_t iter)
 {
   const LDvec oldsum = avg, oldstd = std;
   advance();

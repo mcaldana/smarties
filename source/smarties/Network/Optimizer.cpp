@@ -135,7 +135,7 @@ void AdamOptimizer::apply_update()
 
   #pragma omp parallel
   {
-    const Uint thrID = static_cast<Uint>(omp_get_thread_num());
+    const uint64_t thrID = static_cast<uint64_t>(omp_get_thread_num());
     Saru gen(nStep, thrID, generators[thrID]()); //needs 3 seeds
     Algorithm algo(_eta,beta_1,beta_2,beta_t_1,beta_t_2,lambda,factor,gen);
     nnReal* const M1 = _1stMom->params;
@@ -148,7 +148,7 @@ void AdamOptimizer::apply_update()
     nnReal* const G  = gradSum->params;
 
   #pragma omp for simd schedule(static) aligned(paramAry,M1,M2,M3,G:VEC_WIDTH)
-    for (Uint i=0; i<weights->nParams; ++i)
+    for (uint64_t i=0; i<weights->nParams; ++i)
     paramAry[i] += algo.step(G[i], M1[i], M2[i], M3[i], paramAry[i]);
   }
 
@@ -169,7 +169,7 @@ void AdamOptimizer::apply_update()
       else { // else is the learning rate of an exponential averaging
         nnReal* const targetAry = target_weights->params;
         #pragma omp parallel for simd schedule(static) aligned(paramAry,targetAry:VEC_WIDTH)
-        for(Uint j=0; j<weights->nParams; ++j)
+        for(uint64_t j=0; j<weights->nParams; ++j)
           targetAry[j] += tgtUpdateAlpha*(paramAry[j] - targetAry[j]);
       }
     }

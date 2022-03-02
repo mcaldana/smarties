@@ -22,9 +22,9 @@ struct ExecutionInfo;
 
 struct HyperParameters
 {
-  const Uint dimS, dimA;
+  const uint64_t dimS, dimA;
 
-  HyperParameters(const Uint nS, const Uint nA) : dimS(nS), dimA(nA) {}
+  HyperParameters(const uint64_t nS, const uint64_t nA) : dimS(nS), dimA(nA) {}
 
   void check();
   static std::string printArgComments();
@@ -49,20 +49,20 @@ struct HyperParameters
   Real targetDelay = 0;
   Real epsAnneal = 5e-7;
 
-  Uint minTotObsNum = 0;
-  Uint maxTotObsNum = std::pow(2, 14) * std::sqrt(dimA + dimS);
-  Uint saveFreq = 50000;
+  uint64_t minTotObsNum = 0;
+  uint64_t maxTotObsNum = std::pow(2, 14) * std::sqrt(dimA + dimS);
+  uint64_t saveFreq = 50000;
 
   //////////////////////////////////////////////////////////////////////////////
   //SETTINGS PERTAINING TO NETWORK
   //////////////////////////////////////////////////////////////////////////////
 
-  std::vector<Uint> encoderLayerSizes = { 0 };
-  std::vector<Uint> nnLayerSizes = { 128, 128 };
+  std::vector<uint64_t> encoderLayerSizes = { 0 };
+  std::vector<uint64_t> nnLayerSizes = { 128, 128 };
 
-  Uint batchSize = 256;
-  Uint ESpopSize = 1;
-  Uint nnBPTTseq = 16;
+  uint64_t batchSize = 256;
+  uint64_t ESpopSize = 1;
+  uint64_t nnBPTTseq = 16;
 
   Real nnLambda = std::numeric_limits<float>::epsilon();
   Real learnrate = 1e-4;
@@ -76,10 +76,10 @@ struct HyperParameters
   //SETTINGS THAT ARE NOT READ FROM FILE
   //////////////////////////////////////////////////////////////////////////////
   // rank-local data-acquisition goals:
-  Uint batchSize_local = 0;
+  uint64_t batchSize_local = 0;
   Real obsPerStep_local = 0;
-  Uint minTotObsNum_local = 0;
-  Uint maxTotObsNum_local = 0;
+  uint64_t minTotObsNum_local = 0;
+  uint64_t maxTotObsNum_local = 0;
   // whether Recurrent network (figured out in main)
   bool bRecurrent = false;
   // whether sampling minibatch of episodes or of timesteps, determined by algo

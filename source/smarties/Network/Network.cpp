@@ -12,7 +12,7 @@
 namespace smarties
 {
 
-Network::Network(const Uint _nInp, const Uint _nOut,
+Network::Network(const uint64_t _nInp, const uint64_t _nOut,
                  std::vector<std::unique_ptr<Layer>>& L,
                  const std::shared_ptr<Parameters>& W) :
   layers(std::move(L)), nInputs(_nInp), nOutputs(_nOut), weights(W)
@@ -71,29 +71,29 @@ void Network::dump(const int agentID)
 {
   if (not bDump) return;
   char buf[512];
-  snprintf(buf, 512, "%07u", (Uint)dump_ID[agentID]);
+  snprintf(buf, 512, "%07u", (uint64_t)dump_ID[agentID]);
   string nameNeurons  = "neuronOuts_"+to_string(agentID)+"_"+string(buf)+".dat";
   string nameMemories = "cellStates_"+to_string(agentID)+"_"+string(buf)+".dat";
   string nameOut_Mems = "out_states_"+to_string(agentID)+"_"+string(buf)+".dat";
   {
     ofstream out(nameOut_Mems.c_str());
     if(!out.good()) _die("Unable to save into file %s\n", nameOut_Mems.c_str());
-    for (Uint j=0; j<nNeurons; ++j) out << *(mem[agentID]->outvals +j) << " ";
-    for (Uint j=0; j<nStates;  ++j) out << *(mem[agentID]->ostates +j) << " ";
+    for (uint64_t j=0; j<nNeurons; ++j) out << *(mem[agentID]->outvals +j) << " ";
+    for (uint64_t j=0; j<nStates;  ++j) out << *(mem[agentID]->ostates +j) << " ";
     out << "\n";
     out.close();
   }
   {
     ofstream out(nameNeurons.c_str());
     if(!out.good()) _die("Unable to save into file %s\n", nameNeurons.c_str());
-    for (Uint j=0; j<nNeurons; ++j) out << *(mem[agentID]->outvals +j) << " ";
+    for (uint64_t j=0; j<nNeurons; ++j) out << *(mem[agentID]->outvals +j) << " ";
     out << "\n";
     out.close();
   }
   {
     ofstream out(nameMemories.c_str());
     if(!out.good()) _die("Unable to save into file %s\n", nameMemories.c_str());
-    for (Uint j=0; j<nStates;  ++j) out << *(mem[agentID]->ostates +j) << " ";
+    for (uint64_t j=0; j<nStates;  ++j) out << *(mem[agentID]->ostates +j) << " ";
     out << "\n";
     out.close();
   }

@@ -32,7 +32,7 @@ CMA_Optimizer::CMA_Optimizer(const HyperParameters& S, const ExecutionInfo& D,
   generators.resize(populationSize, nullptr);
   stdgens.resize(populationSize, nullptr);
   #pragma omp parallel for schedule(static, 1) num_threads(nThreads)
-  for(Uint i=0; i<populationSize; ++i) {
+  for(uint64_t i=0; i<populationSize; ++i) {
     generators[i] = std::make_unique<Saru>(seed[3*i], seed[3*i+1], seed[3*i+2]);
     stdgens[i] = std::make_unique<std::mt19937>(seed[3*i +0]);
   }
@@ -42,13 +42,13 @@ CMA_Optimizer::CMA_Optimizer(const HyperParameters& S, const ExecutionInfo& D,
   //const nnReal* const D = pathDif->params;
   const nnReal _eta = computeStdDevScale();
   #pragma omp parallel num_threads(nThreads)
-  for(Uint i=1; i<populationSize; ++i)
+  for(uint64_t i=1; i<populationSize; ++i)
   {
     Saru & gen = * generators[omp_get_thread_num()].get();
     nnReal* const Y = popNoiseVectors[i]->params;
     nnReal* const X = sampled_weights[i]->params;
     #pragma omp for schedule(static)
-    for(Uint w=pStart; w<pStart+pCount; ++w) {
+    for(uint64_t w=pStart; w<pStart+pCount; ++w) {
       Y[w] = gen.f_mean0_var1() * _S[w];
       X[w] = M[w] + _eta * Y[w]; //+ _eta*1e-2*D[w];
     }
@@ -56,7 +56,7 @@ CMA_Optimizer::CMA_Optimizer(const HyperParameters& S, const ExecutionInfo& D,
     startAllGather(i);
   }
 
-  for(Uint i=1; i<populationSize; ++i)
+  for(uint64_t i=1; i<populationSize; ++i)
     MPI(Wait, &weightsMPIrequests[i], MPI_STATUS_IGNORE);
 }
 
@@ -95,10 +95,10 @@ void CMA_Optimizer::apply_update()
   //         of the various parameter vectors (from pStart to pStart + pCount).
   // OpenMP) Mixed. Some loops are parallelized over vector length pCount (1.)
   //         Some loops are parallelized over population size (3.)
-  std::vector<Uint> inds(populationSize, 0);
+  std::vector<uint64_t> inds(populationSize, 0);
   std::iota(inds.begin(), inds.end(), 0);
   std::sort(inds.begin(), inds.end(), // is i1 before i2
-       [&] (const Uint i1, const Uint i2) { return losses[i1] < losses[i2]; } );
+       [&] (const uint64_t i1, const uint64_t i2) { return losses[i1] < losses[i2]; } );
 
   // 0.
   sampled_weights[0]->copy(weights);
@@ -117,10 +117,10 @@ void CMA_Optimizer::apply_update()
 
   #pragma omp parallel num_threads(nThreads)
   {
-    const Uint thrID = omp_get_thread_num();
+    const uint64_t thrID = omp_get_thread_num();
 
     // 1.
-    for(Uint i=0; i<populationSize; ++i)
+    for(uint64_t i=0; i<populationSize; ++i)
     {
       nnReal * const M = weights->params;
       const nnReal wC = popWeights[i];
@@ -128,7 +128,7 @@ void CMA_Optimizer::apply_update()
 
       const nnReal* const X = sampled_weights[ inds[i] ]->params;
       #pragma omp for simd schedule(static) aligned(M,X : VEC_WIDTH) nowait
-      for(Uint w=pStart; w<pStart+pCount; ++w) M[w] += wC * X[w];
+      for(uint64_t w=pStart; w<pStart+pCount; ++w) M[w] += wC * X[w];
     }
 
     #pragma omp barrier // wait for all parellel-nowait loops above
@@ -136,7 +136,7 @@ void CMA_Optimizer::apply_update()
     if(thrID == 0) startAllGather(0);
 
     // 2.
-    for(Uint i=0; i<populationSize; ++i)
+    for(uint64_t i=0; i<populationSize; ++i)
     {
       const nnReal wC = popWeights[i];
       const nnReal wZ = std::max(wC, (nnReal) 0 );
@@ -145,7 +145,7 @@ void CMA_Optimizer::apply_update()
       nnReal * const A = avgNois->params;
       const nnReal* const Y = popNoiseVectors[ inds[i] ]->params;
       #pragma omp for simd schedule(static) aligned(A,B,Y : VEC_WIDTH) nowait
-      for(Uint w=pStart; w<pStart+pCount; ++w) {
+      for(uint64_t w=pStart; w<pStart+pCount; ++w) {
         B[w] += wC * Y[w]*Y[w];
         A[w] += wZ * Y[w];
       }
@@ -159,7 +159,7 @@ void CMA_Optimizer::apply_update()
 
     // 3.
     #pragma omp for simd schedule(static) aligned(P,A,S,B : VEC_WIDTH)
-    for(Uint w=pStart; w<pStart+pCount; ++w)
+    for(uint64_t w=pStart; w<pStart+pCount; ++w)
     {
       P[w] = alphaP * P[w] + updSigP * A[w];
       S[w] = std::sqrt( alpha*S[w]*S[w] + c1cov*P[w]*P[w] + mu_eff*c1cov*B[w] );
@@ -172,34 +172,34 @@ void CMA_Optimizer::apply_update()
     // 4.
     #if 0 // Parellized over pop size. Benefit: gathers start asap.
       #pragma omp for schedule(static, 1) nowait
-      for(Uint i=1; i<populationSize; ++i)
+      for(uint64_t i=1; i<populationSize; ++i)
       {
         nnReal* const Y = popNoiseVectors[i]->params;
         nnReal* const X = sampled_weights[i]->params;
-        for(Uint w=pStart; w<pStart+pCount; ++w) {
+        for(uint64_t w=pStart; w<pStart+pCount; ++w) {
           Y[w] = gen.f_mean0_var1() * S[w];
           X[w] = M[w] + _eta * Y[w]; //+ _eta*1e-2*D[w];
         }
         startAllGather(i);
       }
     #else // Parellized over pCount. Benefit: less compulsory cache misses.
-      for(Uint i=1; i<populationSize; i+=2)
+      for(uint64_t i=1; i<populationSize; i+=2)
       {
         nnReal* const Y = popNoiseVectors[i]->params;
         nnReal* const X = sampled_weights[i]->params;
         #pragma omp for schedule(static) nowait
-        for(Uint w=pStart; w<pStart+pCount; ++w) {
+        for(uint64_t w=pStart; w<pStart+pCount; ++w) {
           Y[w] = gen.f_mean0_var1() * S[w];
           X[w] = M[w] + _eta * Y[w];
         }
       }
-      for(Uint i=2; i<populationSize; i+=2)
+      for(uint64_t i=2; i<populationSize; i+=2)
       {
         nnReal* const Y = popNoiseVectors[i]->params;
         nnReal* const Yref = popNoiseVectors[i-1]->params;
         nnReal* const X = sampled_weights[i]->params;
         #pragma omp for simd schedule(static) aligned(Y,X,M,Yref : VEC_WIDTH) nowait
-        for(Uint w=pStart; w<pStart+pCount; ++w) {
+        for(uint64_t w=pStart; w<pStart+pCount; ++w) {
           Y[w] = - Yref[w];
           X[w] = M[w] + _eta * Y[w];
         }
@@ -207,7 +207,7 @@ void CMA_Optimizer::apply_update()
     #endif
   }
   #if 1 // Parellized over pCount. Benefit: less compulsory cache misses.
-    for(Uint i=1; i<populationSize; ++i) startAllGather(i);
+    for(uint64_t i=1; i<populationSize; ++i) startAllGather(i);
   #endif
 
   // Mean parameter vector needs to be available when we exit:
@@ -260,7 +260,7 @@ void CMA_Optimizer::getHeaders(std::ostringstream&buff,const std::string nnName)
   buff << "| avgC "; //Nswp |
 }
 
-void CMA_Optimizer::startAllGather(const Uint ID)
+void CMA_Optimizer::startAllGather(const uint64_t ID)
 {
   if( learn_size < 2 ) return;
 

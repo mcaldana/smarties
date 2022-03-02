@@ -72,10 +72,10 @@ processTerminal(const MiniBatch& MB, Agent& agent)
 template<typename Action_t> void CMALearner<Action_t>::prepareCMALoss()
 {
   profiler->start("LOSS");
-  std::vector<Uint> allN(ESpopSize, 0);
+  std::vector<uint64_t> allN(ESpopSize, 0);
 
-  for (Uint w=0; w<ESpopSize; ++w) {
-    for (Uint b=0; b<nOwnEnvs; ++b) {
+  for (uint64_t w=0; w<ESpopSize; ++w) {
+    for (uint64_t b=0; b<nOwnEnvs; ++b) {
       networks[0]->ESloss(w) -= R[b][w];
       allN[w] += Ns[b][w];
     }
@@ -85,10 +85,10 @@ template<typename Action_t> void CMALearner<Action_t>::prepareCMALoss()
   }
   // reset cumulative rewards:
   R = std::vector<Rvec>(nOwnEnvs, Rvec(ESpopSize, 0));
-  Ns= std::vector<std::vector<Uint>>(nOwnEnvs, std::vector<Uint>(ESpopSize, 0));
+  Ns= std::vector<std::vector<uint64_t>>(nOwnEnvs, std::vector<uint64_t>(ESpopSize, 0));
 
   {
-    const Uint workLoadSize = settings.batchSize_local * ESpopSize;
+    const uint64_t workLoadSize = settings.batchSize_local * ESpopSize;
     std::lock_guard<std::mutex> lock(workload_mutex);
     lastWorkLoadStarted = lastWorkLoadStarted % workLoadSize;
   }
@@ -164,11 +164,11 @@ bool CMALearner<Action_t>::blockGradientUpdates() const
   return data->nStoredEps() < nSeqPerStep;
 }
 
-template<> void CMALearner<Uint>::
+template<> void CMALearner<uint64_t>::
 computeAction(Agent& agent, const Rvec netOutput) const
 {
   Discrete_policy POL({0}, aInfo, netOutput);
-  Uint act = POL.selectAction(agent, settings.explNoise>0);
+  uint64_t act = POL.selectAction(agent, settings.explNoise>0);
   agent.setAction(act, POL.getVector());
 }
 
@@ -182,33 +182,33 @@ computeAction(Agent& agent, const Rvec netOutput) const
 }
 
 template<>
-std::vector<Uint> CMALearner<Uint>::count_pol_outputs(const ActionInfo*const aI)
+std::vector<uint64_t> CMALearner<uint64_t>::count_pol_outputs(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{ aI->dimDiscrete() };
+  return std::vector<uint64_t>{ aI->dimDiscrete() };
 }
 template<>
-std::vector<Uint> CMALearner<Uint>::count_pol_starts(const ActionInfo*const aI)
+std::vector<uint64_t> CMALearner<uint64_t>::count_pol_starts(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{0};
+  return std::vector<uint64_t>{0};
 }
 template<>
-Uint CMALearner<Uint>::getnDimPolicy(const ActionInfo*const aI)
+uint64_t CMALearner<uint64_t>::getnDimPolicy(const ActionInfo*const aI)
 {
   return aI->dimDiscrete();
 }
 
 template<>
-std::vector<Uint> CMALearner<Rvec>::count_pol_outputs(const ActionInfo*const aI)
+std::vector<uint64_t> CMALearner<Rvec>::count_pol_outputs(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{aI->dim()};
+  return std::vector<uint64_t>{aI->dim()};
 }
 template<>
-std::vector<Uint> CMALearner<Rvec>::count_pol_starts(const ActionInfo*const aI)
+std::vector<uint64_t> CMALearner<Rvec>::count_pol_starts(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{0};
+  return std::vector<uint64_t>{0};
 }
 template<>
-Uint CMALearner<Rvec>::getnDimPolicy(const ActionInfo*const aI)
+uint64_t CMALearner<Rvec>::getnDimPolicy(const ActionInfo*const aI)
 {
   return aI->dim();
 }
@@ -235,7 +235,7 @@ Learner_approximator(MDP_, S_, D_)
   if(ESpopSize<=1) die("CMA learner requires ESpopSize>1");
 }
 
-template<> CMALearner<Uint>::
+template<> CMALearner<uint64_t>::
 CMALearner(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_) :
 Learner_approximator(MDP_, S_, D_)
 {
@@ -253,12 +253,12 @@ Learner_approximator(MDP_, S_, D_)
   if(ESpopSize<=1) die("CMA learner requires ESpopSize>1");
 }
 
-template class CMALearner<Uint>;
+template class CMALearner<uint64_t>;
 template class CMALearner<Rvec>;
 
 template<typename Action_t>
 void CMALearner<Action_t>::
-Train(const MiniBatch&MB,const Uint wID,const Uint bID) const
+Train(const MiniBatch&MB,const uint64_t wID,const uint64_t bID) const
 {}
 
 }

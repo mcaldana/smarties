@@ -77,18 +77,18 @@ void PPO<Policy_t, Action_t>::setupNet()
 ///////////////////////////////////////////////////////////////////////
 /////////// TEMPLATE SPECIALIZATION FOR CONTINUOUS ACTIONS ////////////
 ///////////////////////////////////////////////////////////////////////
-template<> std::vector<Uint> PPO<Continuous_policy, Rvec>::
+template<> std::vector<uint64_t> PPO<Continuous_policy, Rvec>::
 count_pol_outputs(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{aI->dim(), aI->dim()};
+  return std::vector<uint64_t>{aI->dim(), aI->dim()};
 }
-template<> std::vector<Uint> PPO<Continuous_policy, Rvec>::
+template<> std::vector<uint64_t> PPO<Continuous_policy, Rvec>::
 count_pol_starts(const ActionInfo*const aI)
 {
-  const std::vector<Uint> indices = Utilities::count_indices(count_pol_outputs(aI));
-  return std::vector<Uint>{indices[0], indices[1]};
+  const std::vector<uint64_t> indices = Utilities::count_indices(count_pol_outputs(aI));
+  return std::vector<uint64_t>{indices[0], indices[1]};
 }
-template<> Uint PPO<Continuous_policy, Rvec>::
+template<> uint64_t PPO<Continuous_policy, Rvec>::
 getnDimPolicy(const ActionInfo*const aI)
 {
   return 2*aI->dim(); // policy dimension is mean and diag covariance
@@ -104,24 +104,24 @@ PPO(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_):
 ///////////////////////////////////////////////////////////////////////
 //////////// TEMPLATE SPECIALIZATION FOR DISCRETE ACTIONS /////////////
 ///////////////////////////////////////////////////////////////////////
-template<> std::vector<Uint> PPO<Discrete_policy, Uint>::
+template<> std::vector<uint64_t> PPO<Discrete_policy, uint64_t>::
 count_pol_outputs(const ActionInfo*const aI)
 {
-  return std::vector<Uint>{aI->dimDiscrete()};
+  return std::vector<uint64_t>{aI->dimDiscrete()};
 }
-template<> std::vector<Uint> PPO<Discrete_policy, Uint>::
+template<> std::vector<uint64_t> PPO<Discrete_policy, uint64_t>::
 count_pol_starts(const ActionInfo*const aI)
 {
-  const std::vector<Uint> indices = Utilities::count_indices(count_pol_outputs(aI));
-  return std::vector<Uint>{indices[0]};
+  const std::vector<uint64_t> indices = Utilities::count_indices(count_pol_outputs(aI));
+  return std::vector<uint64_t>{indices[0]};
 }
-template<> Uint PPO<Discrete_policy, Uint>::
+template<> uint64_t PPO<Discrete_policy, uint64_t>::
 getnDimPolicy(const ActionInfo*const aI)
 {
   return aI->dimDiscrete();
 }
 
-template<> PPO<Discrete_policy, Uint>::
+template<> PPO<Discrete_policy, uint64_t>::
 PPO(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_):
   Learner_approximator(MDP_, S_, D_), pol_outputs(count_pol_outputs(&aInfo)), penal_reduce(D_, LDvec{0.,1.})
 {

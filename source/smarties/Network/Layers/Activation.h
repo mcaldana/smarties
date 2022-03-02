@@ -19,25 +19,25 @@ using ActivationPtr_t = std::unique_ptr<Activation>;
 
 struct Activation
 {
-  Uint _nOuts(std::vector<Uint> _sizes, std::vector<Uint> _bOut)
+  uint64_t _nOuts(std::vector<uint64_t> _sizes, std::vector<uint64_t> _bOut)
   {
     assert(_sizes.size() == _bOut.size() && (size_t) nLayers == _bOut.size());
-    Uint ret = 0;
-    for(Uint i=0; i<_bOut.size(); ++i) if(_bOut[i]) ret += _sizes[i];
+    uint64_t ret = 0;
+    for(uint64_t i=0; i<_bOut.size(); ++i) if(_bOut[i]) ret += _sizes[i];
     if(!ret) die("err nOutputs");
     return ret;
   }
-  Uint _nInps(std::vector<Uint> _sizes, std::vector<Uint> _bInp)
+  uint64_t _nInps(std::vector<uint64_t> _sizes, std::vector<uint64_t> _bInp)
   {
     assert(_sizes.size() == _bInp.size() && (size_t) nLayers == _bInp.size());
-    Uint ret = 0;
-    for(Uint i=0; i<_bInp.size(); ++i) if(_bInp[i]) ret += _sizes[i];
+    uint64_t ret = 0;
+    for(uint64_t i=0; i<_bInp.size(); ++i) if(_bInp[i]) ret += _sizes[i];
     return ret;
   }
 
-  Activation(const std::vector<Uint>& _sizes,
-             const std::vector<Uint>& _bOut,
-             const std::vector<Uint>& _bInp):
+  Activation(const std::vector<uint64_t>& _sizes,
+             const std::vector<uint64_t>& _bOut,
+             const std::vector<uint64_t>& _bInp):
     nLayers(_sizes.size()), nOutputs(_nOuts(_sizes,_bOut)), nInputs(_nInps(_sizes,_bInp)),
     sizes(_sizes), output(_bOut), input(_bInp),
     suminps(Utilities::allocate_vec(_sizes)),
@@ -81,7 +81,7 @@ struct Activation
     return ret;
   }
 
-  std::vector<Real> getInputGradient(const Uint ID) const
+  std::vector<Real> getInputGradient(const uint64_t ID) const
   {
     assert(written == true);
     std::vector<Real> ret(sizes[ID]);
@@ -112,7 +112,7 @@ struct Activation
     assert( (size_t) nOutputs == delta.size()); //alternative not supported
     int k=0;
     for(int i=0; i<nLayers; ++i) if(output[i])
-      for (Uint j=0; j<sizes[i]; ++j, ++k) errvals[i][j] += delta[k];
+      for (uint64_t j=0; j<sizes[i]; ++j, ++k) errvals[i][j] += delta[k];
     assert(k == nOutputs);
     written = true;
   }
@@ -188,7 +188,7 @@ struct Activation
   }
 
   const int nLayers, nOutputs, nInputs;
-  const std::vector<Uint> sizes, output, input;
+  const std::vector<uint64_t> sizes, output, input;
   //contains all inputs to each neuron (inputs to network input layer is empty)
   const std::vector<nnReal*> suminps;
   //contains all neuron outputs that will be the incoming signal to linked layers (outputs of input layer is network inputs)

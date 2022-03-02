@@ -46,7 +46,7 @@ void Learner::select(Agent& agent)
 
 void Learner::initializeLearner()
 {
-  const Uint currStep = nGradSteps();
+  const uint64_t currStep = nGradSteps();
 
   if ( currStep > 0 ) {
     printf("Skipping initialization for restartd learner.\n");
@@ -73,7 +73,7 @@ void Learner::initializeLearner()
 
 void Learner::processMemoryBuffer()
 {
-  const Uint currStep = nGradSteps()+1; //base class will advance this
+  const uint64_t currStep = nGradSteps()+1; //base class will advance this
   profiler->start("FILTER");
   //if (bRecomputeProperties) printf("Using C : %f\n", C);
   MemoryProcessing::updateTrainingStatistics(* data.get());
@@ -134,8 +134,8 @@ void Learner::globalGradCounterUpdate()
 
 void Learner::logStats(const bool bForcePrint)
 {
-  const Uint currStep = nGradSteps()+1;
-  const Uint fProfl = freqPrint * PRFL_DMPFRQ;
+  const uint64_t currStep = nGradSteps()+1;
+  const uint64_t fProfl = freqPrint * PRFL_DMPFRQ;
   const bool bProfileAndHist = currStep % fProfl == 0 && learn_rank == 0;
   if(bProfileAndHist) {
     printf("%s\n", profiler->printStatAndReset().c_str() );

@@ -17,9 +17,9 @@ namespace smarties
 
 struct ReplayStats
 {
-  Uint nFarPolicySteps = 0;
+  uint64_t nFarPolicySteps = 0;
   Real avgKLdivergence = 0;
-  Sint countReturnsEstimateUpdates = 0;
+  int64_t countReturnsEstimateUpdates = 0;
   Real sumReturnsEstimateErrors = 0;
   Real avgSquaredErr = 0;
   Real maxAbsError = 0;
@@ -28,7 +28,7 @@ struct ReplayStats
   Real avgQ = 0;
   Real maxQ = 0;
   Real minQ = 0;
-  Sint nPrunedEps = 0;
+  int64_t nPrunedEps = 0;
 };
 
 struct ReplayCounters

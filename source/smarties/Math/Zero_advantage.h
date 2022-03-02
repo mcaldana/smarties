@@ -19,7 +19,7 @@ struct Zero_advantage
 {
   const ActionInfo& aInfo;
 
-  static Uint compute_nL(const ActionInfo& aI) { return 0; }
+  static uint64_t compute_nL(const ActionInfo& aI) { return 0; }
   static void setInitial(const ActionInfo& aI, Rvec& initBias) { }
 
   //Rvec getParam() const {
@@ -29,7 +29,7 @@ struct Zero_advantage
   //}
 
   //Normalized quadratic advantage, with own mean
-  Zero_advantage(const std::vector<Uint>& starts,
+  Zero_advantage(const std::vector<uint64_t>& starts,
                  const ActionInfo& aI,
                  const Rvec& out,
                  const Continuous_policy*const pol = nullptr) : aInfo(aI) { }

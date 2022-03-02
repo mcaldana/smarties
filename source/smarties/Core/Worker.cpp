@@ -21,21 +21,8 @@ Worker::Worker(ExecutionInfo&D) : distrib(D),
   dataTasks( [&]() { return learnersBlockingDataAcquisition(); } ),
   algoTasks( [&]() { return learnersBlockingDataAcquisition(); } ),
   COMM( std::make_unique<Launcher>(this, D) ),
-  ENV( COMM->ENV ), agents( ENV.agents )
-{
-  /*
-  if (0) { //}(distrib.bIsMaster) {
-    // are we communicating with environments through sockets or mpi?
-    //if(COMM->SOCK.clients.size()>0 == MPICommSize(master_workers_comm)>1);
-    //  die("impossible: environments through mpi XOR sockets");
-    if(distrib.nForkedProcesses2spawn > 0)
-      assert(COMM->SOCK.clients.size() == (size_t) nCallingEnvs);
-    else
-      assert(MPICommSize(master_workers_comm) == (size_t) nCallingEnvs+1);
-    assert(COMM->BUFF.size() == (size_t) nCallingEnvs);
-  }
-  */
-}
+  m_Environment( COMM->m_Environment ), agents( m_Environment.agents )
+{}
 
 void Worker::run(const environment_callback_t & callback)
 {
@@ -59,7 +46,7 @@ void Worker::runTraining()
   //////////////////////////////////////////////////////////////////////////////
   long minNdataB4Train = learners[0]->nObsB4StartTraining;
   int firstLearnerStart = 0, isTrainingStarted = 0, percentageReady = -5;
-  for(Uint i=1; i<learners.size(); ++i)
+  for(uint64_t i=1; i<learners.size(); ++i)
     if(learners[i]->nObsB4StartTraining < minNdataB4Train) {
       minNdataB4Train = learners[i]->nObsB4StartTraining;
       firstLearnerStart = i;
@@ -83,7 +70,7 @@ void Worker::runTraining()
     if(isTrainingStarted==0) return false;
 
     bool over = true;
-    const Real factor = learners.size()==1? 1.0/ENV.nAgentsPerEnvironment : 1;
+    const Real factor = learners.size()==1? 1.0/m_Environment.nAgentsPerEnvironment : 1;
     for(const auto& L : learners)
       over = over && L->nLocTimeStepsTrain() * factor >= distrib.nTrainSteps;
     return over;
@@ -92,7 +79,7 @@ void Worker::runTraining()
   {
     // if agents share learning algo, return number of turns performed by env
     // instead of sum of timesteps performed by each agent
-    const long factor = learners.size()==1? ENV.nAgentsPerEnvironment : 1;
+    const long factor = learners.size()==1? m_Environment.nAgentsPerEnvironment : 1;
     long nEnvSeqs = std::numeric_limits<long>::max();
     for(const auto& L : learners)
       nEnvSeqs = std::min(nEnvSeqs, L->nSeqsEval() / factor);
@@ -115,7 +102,7 @@ void Worker::runTraining()
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////// START DATA COLLECTION ////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
-  std::atomic<Uint> bDataCoordRunning {1};
+  std::atomic<uint64_t> bDataCoordRunning {1};
   std::thread dataCoordProcess;
 
   #pragma omp parallel
@@ -159,25 +146,25 @@ void Worker::answerStateAction(Agent& agent) const
   //      agent.reward, vec2str(agent.action,-1).c_str());
 
   // Some logging and passing around of step id:
-  const Real factor = learners.size()==1? 1.0/ENV.nAgentsPerEnvironment : 1;
-  const Uint nSteps = std::max(algo.nLocTimeSteps(), (long) 0);
+  const Real factor = learners.size()==1? 1.0/m_Environment.nAgentsPerEnvironment : 1;
+  const uint64_t nSteps = std::max(algo.nLocTimeSteps(), (long) 0);
   agent.learnerTimeStepID = factor * nSteps;
   agent.learnerGradStepID = algo.nGradSteps();
   if(agent.agentStatus >= LAST) agent.action[0] = algo.getAvgCumulativeReward();
   //debugS("Sent action to worker %d: [%s]", worker, print(actVec).c_str() );
 }
 
-void Worker::answerStateAction(const Uint bufferID) const
+void Worker::answerStateAction(const uint64_t bufferID) const
 {
-  assert( (Uint) bufferID < COMM->BUFF.size());
+  assert( (uint64_t) bufferID < COMM->m_CommBuffers.size());
   const COMM_buffer& buffer = getCommBuffer(bufferID+1);
   const unsigned localAgentID = Agent::getMessageAgentID(buffer.dataStateBuf);
   // compute agent's ID within worker from the agentid within environment:
-  const int agentID = bufferID * ENV.nAgentsPerEnvironment + localAgentID;
+  const int agentID = bufferID * m_Environment.nAgentsPerEnvironment + localAgentID;
   //read from worker's buffer:
-  assert( (Uint) agentID < agents.size() );
-  assert( (Uint) agents[agentID]->workerID == bufferID );
-  assert( (Uint) agents[agentID]->localID == localAgentID );
+  assert( (uint64_t) agentID < agents.size() );
+  assert( (uint64_t) agents[agentID]->workerID == bufferID );
+  assert( (uint64_t) agents[agentID]->localID == localAgentID );
   Agent& agent = * agents[agentID].get();
   // unpack state onto agent
   agent.unpackStateMsg(buffer.dataStateBuf);
@@ -185,17 +172,17 @@ void Worker::answerStateAction(const Uint bufferID) const
   agent.packActionMsg(buffer.dataActionBuf);
 }
 
-Uint Worker::getLearnerID(const Uint agentIDlocal) const
+uint64_t Worker::getLearnerID(const uint64_t agentIDlocal) const
 {
   // some asserts:
   // 1) agentID within environment must match what we know about environment
-  // 2) either only one learner or ID of agent in ENV must match a learner
+  // 2) either only one learner or ID of agent in m_Environment must match a learner
   // 3) if i have more than one learner, then i have one per agent in env
-  assert(agentIDlocal < ENV.nAgentsPerEnvironment);
+  assert(agentIDlocal < m_Environment.nAgentsPerEnvironment);
   assert(learners.size() == 1 || agentIDlocal < learners.size());
   if(learners.size()>1)
-    assert(learners.size() == (size_t) ENV.nAgentsPerEnvironment);
-  // if one learner, return learnerID=0, else learnID == ID of agent in ENV
+    assert(learners.size() == (size_t) m_Environment.nAgentsPerEnvironment);
+  // if one learner, return learnerID=0, else learnID == ID of agent in m_Environment
   return learners.size()>1? agentIDlocal : 0;
 }
 
@@ -223,12 +210,12 @@ void Worker::synchronizeEnvironments()
   {
     assert(size>0);
     bool received = false;
-    if( COMM->SOCK.clients.size() > 0 ) { // master with apps connected through sockets (on the same compute node)
-      SOCKET_Brecv(buffer, size, COMM->SOCK.clients[0]);
+    if( COMM->m_Sockets.clients.size() > 0 ) { // master with apps connected through sockets (on the same compute node)
+      SOCKET_Brecv(buffer, size, COMM->m_Sockets.clients[0]);
       received = true;
-      for(size_t i=1; i < COMM->SOCK.clients.size(); ++i) {
+      for(size_t i=1; i < COMM->m_Sockets.clients.size(); ++i) {
         void * const testbuf = malloc(size);
-        SOCKET_Brecv(testbuf, size, COMM->SOCK.clients[i]);
+        SOCKET_Brecv(testbuf, size, COMM->m_Sockets.clients[i]);
         const int err = memcmp(testbuf, buffer, size); free(testbuf);
         if(err) die(" error: comm mismatch");
       }
@@ -241,7 +228,7 @@ void Worker::synchronizeEnvironments()
       MPI_Recv(buffer, size, MPI_BYTE, 1, 368637, master_workers_comm, MPI_STATUS_IGNORE);
       received = true;
       // size of comm is number of workers plus master:
-      for(Uint i=2; i < MPICommSize(master_workers_comm); ++i) {
+      for(uint64_t i=2; i < MPICommSize(master_workers_comm); ++i) {
         void * const testbuf = malloc(size);
         MPI_Recv(testbuf, size, MPI_BYTE, i, 368637, master_workers_comm, MPI_STATUS_IGNORE);
         const int err = memcmp(testbuf, buffer, size); free(testbuf);
@@ -260,7 +247,7 @@ void Worker::synchronizeEnvironments()
 
     if( MPICommRank(workerless_masters_comm) == 0 ) {
       if(not received) die("rank 0 of workerless masters comm has no worker");
-      for(Uint i=1; i < MPICommSize(workerless_masters_comm); ++i)
+      for(uint64_t i=1; i < MPICommSize(workerless_masters_comm); ++i)
         MPI_Send(buffer, size, MPI_BYTE, i, 368637, workerless_masters_comm);
     }
 
@@ -270,25 +257,25 @@ void Worker::synchronizeEnvironments()
     }
   };
 
-  ENV.synchronizeEnvironments(recvBuffer, distrib.nOwnedEnvironments);
+  m_Environment.synchronizeEnvironments(recvBuffer, distrib.nOwnedEnvironments);
 
-  for(Uint i=0; i<ENV.nAgents; ++i) {
+  for(uint64_t i=0; i<m_Environment.nAgents; ++i) {
     COMM->initOneCommunicationBuffer();
     agents[i]->initializeActionSampling( distrib.generators[0] );
   }
-  distrib.nAgents = ENV.nAgents;
+  distrib.nAgents = m_Environment.nAgents;
 
   // return if this process should not host the learning algorithms
   if(not distrib.bIsMaster and not distrib.learnersOnWorkers) return;
 
-  const Uint nAlgorithms =
-    ENV.bAgentsHaveSeparateMDPdescriptors? ENV.nAgentsPerEnvironment : 1;
+  const uint64_t nAlgorithms =
+    m_Environment.bAgentsHaveSeparateMDPdescriptors? m_Environment.nAgentsPerEnvironment : 1;
   distrib.nOwnedAgentsPerAlgo =
-    distrib.nOwnedEnvironments * ENV.nAgentsPerEnvironment / nAlgorithms;
+    distrib.nOwnedEnvironments * m_Environment.nAgentsPerEnvironment / nAlgorithms;
   learners.reserve(nAlgorithms);
-  for(Uint i = 0; i<nAlgorithms; ++i)
+  for(uint64_t i = 0; i<nAlgorithms; ++i)
   {
-    learners.emplace_back( createLearner(i, ENV.getDescriptor(i), distrib) );
+    learners.emplace_back( createLearner(i, m_Environment.getDescriptor(i), distrib) );
     assert(learners.size() == i+1);
     learners[i]->restart();
     learners[i]->setupTasks(algoTasks);
@@ -298,7 +285,7 @@ void Worker::synchronizeEnvironments()
 
 void Worker::loopSocketsToMaster()
 {
-  const size_t nClients = COMM->SOCK.clients.size();
+  const size_t nClients = COMM->m_Sockets.clients.size();
   std::vector<SOCKET_REQ> reqs = std::vector<SOCKET_REQ>(nClients);
   // worker's communication functions behave following mpi indexing
   // sockets's rank (bufferID) is its index plus 1 (master)
@@ -347,9 +334,9 @@ void Worker::loopSocketsToMaster()
 void Worker::stepWorkerToMaster(Agent & agent) const
 {
   assert(MPICommRank(master_workers_comm) > 0 || learners.size()>0);
-  const COMM_buffer& BUF = * COMM->BUFF[agent.ID].get();
+  const COMM_buffer& BUF = * COMM->m_CommBuffers[agent.ID].get();
 
-  if (envMPIrank<=0 || not COMM->bEnvDistributedAgents)
+  if (envMPIrank<=0 || !COMM->m_bEnvDistributedAgents)
   {
     if(learners.size()) // then episode/parameter communication loop
     {
@@ -359,7 +346,7 @@ void Worker::stepWorkerToMaster(Agent & agent) const
     }
     else                // then state/action comm loop from worker to master
     {
-      if(envMPIsize) assert( COMM->SOCK.clients.size() == 0 );
+      if(envMPIsize) assert( COMM->m_Sockets.clients.size() == 0 );
 
       agent.packStateMsg(BUF.dataStateBuf);
       sendStateRecvAction(BUF); //up to here everything is written on the buffer
@@ -368,7 +355,7 @@ void Worker::stepWorkerToMaster(Agent & agent) const
 
     //distributed agents means that each agent exists on multiple computational
     //processes (i.e. it is distriburted) therefore actions must be communicated
-    if (COMM->bEnvDistributedAgents && envMPIsize>1) {
+    if (COMM->m_bEnvDistributedAgents && envMPIsize>1) {
       //Then this is rank 0 of an environment with centralized agents.
       //Broadcast same action to members of the gang:
       MPI_Bcast(BUF.dataActionBuf, BUF.sizeActionMsg, MPI_BYTE, 0, envAppComm);
@@ -384,11 +371,11 @@ void Worker::stepWorkerToMaster(Agent & agent) const
   }
 }
 
-void Worker::stepWorkerToMaster(const Uint bufferID) const
+void Worker::stepWorkerToMaster(const uint64_t bufferID) const
 {
   assert(master_workers_comm not_eq MPI_COMM_NULL);
   assert(MPICommRank(master_workers_comm) > 0 || learners.size()>0);
-  assert(COMM->SOCK.clients.size()>0 && "this method should be used by "
+  assert(COMM->m_Sockets.clients.size()>0 && "this method should be used by "
          "intermediary workers between socket-apps and mpi-learners");
   assert(envMPIsize<=1 && "intermediary workers do not support multirank apps");
   sendStateRecvAction( getCommBuffer(bufferID+1) );
@@ -412,16 +399,16 @@ void Worker::sendStateRecvAction(const COMM_buffer& BUF) const
   }
 }
 
-int Worker::getSocketID(const Uint worker) const
+int Worker::getSocketID(const uint64_t worker) const
 {
-  assert( worker <= COMM->SOCK.clients.size() );
-  return worker>0? COMM->SOCK.clients[worker-1] : COMM->SOCK.server;
+  assert( worker <= COMM->m_Sockets.clients.size() );
+  return worker>0? COMM->m_Sockets.clients[worker-1] : COMM->m_Sockets.server;
 }
 
-const COMM_buffer& Worker::getCommBuffer(const Uint worker) const
+const COMM_buffer& Worker::getCommBuffer(const uint64_t worker) const
 {
-  assert( worker>0 && worker <= COMM->BUFF.size() );
-  return * COMM->BUFF[worker-1].get();
+  assert( worker>0 && worker <= COMM->m_CommBuffers.size() );
+  return * COMM->m_CommBuffers[worker-1].get();
 }
 
 }

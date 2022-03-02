@@ -29,9 +29,9 @@ namespace smarties
 struct Function
 {
   //weights are initialized with uniform distrib [-weightsInitFactor, weightsInitFactor]
-  virtual Real initFactor(const Uint inps, const Uint outs) const = 0;
+  virtual Real initFactor(const uint64_t inps, const uint64_t outs) const = 0;
 
-  virtual void eval(const nnReal*const in, nnReal*const out, const Uint N) const = 0; // f(in)
+  virtual void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const = 0; // f(in)
 
   virtual nnReal eval(const nnReal in) const = 0;
   virtual nnReal inverse(const nnReal in) const = 0; // f(in)
@@ -43,22 +43,22 @@ struct Function
 struct Linear : public Function
 {
   std::string name() const override { return "Linear";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(1./inps);
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(1./inps);
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     memcpy(out, in, N*sizeof(nnReal));
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     memcpy(out, in, N*sizeof(nnReal));
   }
@@ -91,12 +91,12 @@ struct Tanh : public Function
 {
   std::string name() const override { return "Tanh"; }
 
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(6./(inps + outs));
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(6./(inps + outs));
   }
@@ -120,13 +120,13 @@ struct Tanh : public Function
   {
     return 1 - out*out;
   }
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
-    for(Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
-    for(Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
   nnReal eval(const nnReal in) const override
   {
@@ -145,12 +145,12 @@ struct Tanh : public Function
 struct Sigm : public Function
 {
   std::string name() const override { return "Sigm";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(6./(inps + outs));
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(6./(inps + outs));
   }
@@ -181,14 +181,14 @@ struct Sigm : public Function
     return out*(1-out);
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
-    for(Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
-    for(Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
   nnReal eval(const nnReal in) const override
   {
@@ -207,12 +207,12 @@ struct Sigm : public Function
 struct HardSign : public Function
 {
   std::string name() const override { return "HardSign";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(6./(inps + outs));
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(6./(inps + outs));
   }
@@ -228,12 +228,12 @@ struct HardSign : public Function
     return 1/(denom*denom*denom);
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0; i<N; ++i) out[i] = in[i]/std::sqrt(1+in[i]*in[i]);
+    for (uint64_t i=0; i<N; ++i) out[i] = in[i]/std::sqrt(1+in[i]*in[i]);
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -255,12 +255,12 @@ struct HardSign : public Function
 struct HardSigmoid : public Function
 {
   std::string name() const override { return "HardSigmoid";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(6./(inps + outs));
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(6./(inps + outs));
   }
@@ -289,12 +289,12 @@ struct HardSigmoid : public Function
     return map/std::sqrt(1 -map*map);
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for (uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -315,12 +315,12 @@ struct HardSigmoid : public Function
 struct SoftSign : public Function
 {
   std::string name() const override { return "SoftSign";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(6.0/(inps + outs));
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(6.0/(inps + outs));
   }
@@ -336,13 +336,13 @@ struct SoftSign : public Function
     return 1/(denom*denom);
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0;i<N; ++i) out[i] = _eval(in[i]);
+    for (uint64_t i=0;i<N; ++i) out[i] = _eval(in[i]);
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -365,10 +365,10 @@ struct SoftRBF : public Function
 {
   std::string name() const override { return "SoftRBF";}
 
-  Real initFactor(const Uint inps, const Uint outs) const override {
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override {
     return std::sqrt(6.0/(inps + outs));
   }
-  static Real _initFactor(const Uint inps, const Uint outs) {
+  static Real _initFactor(const uint64_t inps, const uint64_t outs) {
     return std::sqrt(6.0/(inps + outs));
   }
 
@@ -379,12 +379,12 @@ struct SoftRBF : public Function
     const T denom = 1 + in * in;
     return - 2 * in / (denom * denom);
   }
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N) {
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N) {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0;i<N; ++i) out[i] = _eval(in[i]);
+    for (uint64_t i=0;i<N; ++i) out[i] = _eval(in[i]);
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override {
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override {
     return _eval(in, out, N);
   }
   nnReal eval(const nnReal in) const override {
@@ -402,12 +402,12 @@ struct SoftRBF : public Function
 struct Relu : public Function
 {
   std::string name() const override { return "Relu";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(2./inps);
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(2./inps);
   }
@@ -422,13 +422,13 @@ struct Relu : public Function
     return in>0 ? 1 : 0;
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0;i<N; ++i) out[i] = in[i]>0 ? in[i] : 0;
+    for (uint64_t i=0;i<N; ++i) out[i] = in[i]>0 ? in[i] : 0;
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -450,11 +450,11 @@ struct Relu : public Function
 struct LRelu : public Function
 {
   std::string name() const override { return "LRelu";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(1.0/inps);
   }
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(1.0/inps);
   }
@@ -466,12 +466,12 @@ struct LRelu : public Function
   {
     return in>0 ? 1 : PRELU_FAC;
   }
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0;i<N; ++i) out[i] = in[i]>0 ? in[i] : PRELU_FAC*in[i];
+    for (uint64_t i=0;i<N; ++i) out[i] = in[i]>0 ? in[i] : PRELU_FAC*in[i];
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -493,10 +493,10 @@ struct LRelu : public Function
 struct ExpPlus : public Function
 {
   std::string name() const override { return "ExpPlus";}
-  Real initFactor(const Uint inps, const Uint outs) const override {
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override {
     return std::sqrt(2./inps);
   }
-  static Real _initFactor(const Uint inps, const Uint outs) {
+  static Real _initFactor(const uint64_t inps, const uint64_t outs) {
     return std::sqrt(2./inps);
   }
   template <typename T> static T _inv(const T in) {
@@ -516,11 +516,11 @@ struct ExpPlus : public Function
   {
     return 1/(1 + Utilities::safeExp(-in));
   }
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
-    for(Uint i=0; i<N; ++i) out[i] = _eval(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = _eval(in[i]);
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -541,11 +541,11 @@ struct ExpPlus : public Function
 struct SoftPlus : public Function
 {
   std::string name() const override { return "SoftPlus";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(2./inps);
   }
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(2./inps);
   }
@@ -566,12 +566,12 @@ struct SoftPlus : public Function
     assert(in > 0);
     return (in*in - (T)0.25)/in;
   }
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
     #pragma omp simd aligned(in,out : VEC_WIDTH)
-    for (Uint i=0;i<N; ++i) out[i] = (in[i] + std::sqrt(1+in[i]*in[i])) / 2;
+    for (uint64_t i=0;i<N; ++i) out[i] = (in[i] + std::sqrt(1+in[i]*in[i])) / 2;
   }
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }
@@ -586,12 +586,12 @@ struct SoftPlus : public Function
 struct Exp : public Function
 {
   std::string name() const override { return "Exp";}
-  Real initFactor(const Uint inps, const Uint outs) const override
+  Real initFactor(const uint64_t inps, const uint64_t outs) const override
   {
     return std::sqrt(2./inps);
   }
 
-  static Real _initFactor(const Uint inps, const Uint outs)
+  static Real _initFactor(const uint64_t inps, const uint64_t outs)
   {
     return std::sqrt(2./inps);
   }
@@ -616,12 +616,12 @@ struct Exp : public Function
     return out;
   }
 
-  static void _eval(const nnReal*const in, nnReal*const out, const Uint N)
+  static void _eval(const nnReal*const in, nnReal*const out, const uint64_t N)
   {
-    for(Uint i=0; i<N; ++i) out[i] = Utilities::nnSafeExp(in[i]);
+    for(uint64_t i=0; i<N; ++i) out[i] = Utilities::nnSafeExp(in[i]);
   }
 
-  void eval(const nnReal*const in, nnReal*const out, const Uint N) const override
+  void eval(const nnReal*const in, nnReal*const out, const uint64_t N) const override
   {
     return _eval(in, out, N);
   }

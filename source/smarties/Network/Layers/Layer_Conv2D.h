@@ -30,14 +30,14 @@ struct Conv2DLayer: public Layer
 {
   static constexpr int out_size = KnC*OpY*OpX;
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nBiases.push_back(out_size);
     nWeight.push_back(KnC * InC * KnY * KnX);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(out_size);
     bOutputs.push_back(bOutput);
     bInputs.push_back(bInput);
@@ -45,7 +45,7 @@ struct Conv2DLayer: public Layer
   void biasInitialValues(const std::vector<Real> init) override { }
 
 
-  Conv2DLayer(int _ID, bool bOut, Uint iLink) :
+  Conv2DLayer(int _ID, bool bOut, uint64_t iLink) :
     Layer(_ID, out_size, bOut, false, iLink) {
     spanCompInpGrads = inp_size;
     static_assert(InC>0 && InY>0 && InX>0, "Invalid input image size");
@@ -207,8 +207,8 @@ struct Conv2DLayer: public Layer
     nnReal* const weight = W->W(ID);
     assert(W->NB(ID) == out_size);
     assert(W->NW(ID) == KnX * KnY * KnC * InC);
-    for(Uint o=0; o < W->NB(ID); ++o) biases[o] = 0;
-    for(Uint o=0; o < W->NW(ID); ++o) weight[o] = dis(G);
+    for(uint64_t o=0; o < W->NB(ID); ++o) biases[o] = 0;
+    for(uint64_t o=0; o < W->NW(ID); ++o) weight[o] = dis(G);
   }
 
   size_t  save(const Parameters * const para,
@@ -216,8 +216,8 @@ struct Conv2DLayer: public Layer
   {
     const nnReal* const bias = para->B(ID);
     const nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<para->NW(ID); ++n) *(tmp++) = (float) weight[n];
-    for (Uint n=0; n<para->NB(ID); ++n) *(tmp++) = (float) bias[n];
+    for (uint64_t n=0; n<para->NW(ID); ++n) *(tmp++) = (float) weight[n];
+    for (uint64_t n=0; n<para->NB(ID); ++n) *(tmp++) = (float) bias[n];
     return para->NB(ID) + para->NW(ID);
   }
   size_t restart(const Parameters * const para,
@@ -225,8 +225,8 @@ struct Conv2DLayer: public Layer
   {
     nnReal* const bias = para->B(ID);
     nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<para->NW(ID); ++n) weight[n] = (nnReal) *(tmp++);
-    for (Uint n=0; n<para->NB(ID); ++n) bias[n] = (nnReal) *(tmp++);
+    for (uint64_t n=0; n<para->NW(ID); ++n) weight[n] = (nnReal) *(tmp++);
+    for (uint64_t n=0; n<para->NB(ID); ++n) bias[n] = (nnReal) *(tmp++);
     return para->NB(ID) + para->NW(ID);
   }
 };
@@ -248,21 +248,21 @@ struct Mat2ImLayer: public Layer
   static constexpr int inp_size = InC*InX*InY;
   static constexpr int out_size = InC*KnY*KnX*OpY*OpX;
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nBiases.push_back(0);
     nWeight.push_back(0);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(out_size);
     bOutputs.push_back(bOutput);
     bInputs.push_back(bInput);
   }
   void biasInitialValues(const std::vector<Real> init) override { }
 
-  Mat2ImLayer(int _ID, bool bOut, Uint iLink):
+  Mat2ImLayer(int _ID, bool bOut, uint64_t iLink):
     Layer(_ID, out_size, bOut, false, iLink)
   {
     spanCompInpGrads = inp_size;

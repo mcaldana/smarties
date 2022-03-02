@@ -21,14 +21,14 @@ protected:
   ExecutionInfo & distrib;
 
   std::vector<std::string> argsFiles;
-  std::vector<Uint> argFilesStepsLimits;
+  std::vector<uint64_t> argFilesStepsLimits;
 
   void initArgumentFileNames();
-  void createGoRunDir(char* initDir, Uint folderID, MPI_Comm anvAppCom);
+  void createGoRunDir(char* initDir, uint64_t folderID, MPI_Comm anvAppCom);
   std::vector<char*> readRunArgLst(const std::string& paramfile);
 
   void launch(const environment_callback_t & callback,
-              const Uint workLoadID,
+              const uint64_t workLoadID,
               const MPI_Comm envApplication_comm);
 
 public:

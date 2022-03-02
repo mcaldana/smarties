@@ -21,15 +21,15 @@
 namespace smarties
 {
 
-void ACER::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+void ACER::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Sint ndata = MB.nDataSteps(bID), thrID = omp_get_thread_num();
+  const int64_t ndata = MB.nDataSteps(bID), thrID = omp_get_thread_num();
 
-  std::uniform_int_distribution<Sint> dStart(0, ndata-1);
-  const Sint tst_samp = dStart(generators[thrID]);
-  const Sint tstart = std::min(tst_samp, std::max(ndata-SEQ_CUTOFF, (Sint)0) );
-  const Sint tend   = std::min(ndata, tstart+SEQ_CUTOFF);
-  const Sint nsteps = tend - tstart;
+  std::uniform_int_distribution<int64_t> dStart(0, ndata-1);
+  const int64_t tst_samp = dStart(generators[thrID]);
+  const int64_t tstart = std::min(tst_samp, std::max(ndata-SEQ_CUTOFF, (int64_t)0) );
+  const int64_t tend   = std::min(ndata, tstart+SEQ_CUTOFF);
+  const int64_t nsteps = tend - tstart;
 
   Rvec Vstates(nsteps, 0);
   std::vector<Rvec> policy_samples(nsteps);
@@ -39,7 +39,7 @@ void ACER::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
 
   if(thrID==0) profiler->start("FWD");
 
-  for(Sint step=tstart, i=0; step < tend; ++step, ++i)
+  for(int64_t step=tstart, i=0; step < tend; ++step, ++i)
   {
     const Rvec polVec = actor->forward(bID, step);
     const Rvec polTgtVec = actor->forward_tgt(bID, step);
@@ -56,7 +56,7 @@ void ACER::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
     advtg->setAddedInput(policy_samples[i], bID, step, 1);
     advantages[i][1] = advtg->forward(bID, step, 1) [0]; // sample 1
 
-    for(Uint k=0, samp=2; k<nAexpectation; ++k, ++samp) {
+    for(uint64_t k=0, samp=2; k<nAexpectation; ++k, ++samp) {
       const Rvec extraPolSample = policies[i]->sample(generators[thrID]);
       advtg->setAddedInput(extraPolSample, bID, step, samp);
       advantages[i][samp] = advtg->forward(bID, step, samp) [0]; // sample
@@ -76,7 +76,7 @@ void ACER::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
   for(int step=tend-1, i=nsteps-1; step>=tstart; --step, --i)
   {
     Real QTheta = Vstates[i] + advantages[i][0], APol = advantages[i][1];
-    for(Uint samp = 0; samp < nAexpectation; ++samp) {
+    for(uint64_t samp = 0; samp < nAexpectation; ++samp) {
       QTheta -= advantages[i][2+samp] / nAexpectation;
       APol   -= advantages[i][2+samp] / nAexpectation;
     }
@@ -102,7 +102,7 @@ void ACER::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
     actor->setGradient(          pGrad  , bID, step);
     value->setGradient({ V_err + Q_err }, bID, step);
     advtg->setGradient({         Q_err }, bID, step);
-    for(Uint samp = 0; samp < nAexpectation; ++samp)
+    for(uint64_t samp = 0; samp < nAexpectation; ++samp)
       advtg->setGradient({ -Q_err/nAexpectation }, bID, step, samp+2);
     //prepare Q with off policy corrections for next step:
     Q_RET = R + gamma*( C * (Q_RET - QTheta) + Vstates[i]);

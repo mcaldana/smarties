@@ -16,9 +16,9 @@
 namespace smarties
 {
 
-void MixedPG::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+void MixedPG::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
 
   if(thrID==0) profiler->start("FWD");
   const Rvec pvec = actor->forward(bID, t); // network compute
@@ -63,10 +63,10 @@ void MixedPG::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
 
   const Real F = std::fabs(Verr) < nnEPS ? 0 : 1/(Verr);
   // as if DPG was taken with dLdO = 1, instead of Verr:
-  for (Uint i = 0; i < nA; ++i) DPG[i] *= F;
+  for (uint64_t i = 0; i < nA; ++i) DPG[i] *= F;
   stats[thrID].add(SPG, DPG, Q_RET-qval[0]);
   // scale DPG to be in the same range as SPG:
-  for (Uint i = 0; i < nA; ++i) SPG[i] = SPG[i] + DPG[i] * DPGfactor[i];
+  for (uint64_t i = 0; i < nA; ++i) SPG[i] = SPG[i] + DPG[i] * DPGfactor[i];
 
   Rvec gradPol = Rvec(2*nA + 1, 0);
   const Real VerrActor = Q_RET - Aest - pvec[nA];
@@ -149,7 +149,7 @@ void MixedPG::setupTasks(TaskQueue& tasks)
     MixedPGstats::update(DPGfactor, errQfactor, stats, nA, learnRate, batchSize);
 
     if(nGradSteps() < 100000)
-      for (Uint i = 0; i < nA; ++i)
+      for (uint64_t i = 0; i < nA; ++i)
         DPGfactor[i] = DPGfactor[i] * nGradSteps() / 100000.0;
 
     //const Real oldLambda = critc->getOptimizerPtr()->lambda;

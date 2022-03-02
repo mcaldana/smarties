@@ -13,93 +13,93 @@ namespace smarties
 {
 
 Engine::Engine(int argc, char** argv) :
-  distrib(new ExecutionInfo(argc, argv)) { }
+  m_ExecutionInfo(new ExecutionInfo(argc, argv)) { }
 
 Engine::Engine(std::vector<std::string> args) :
-  distrib(new ExecutionInfo(args)) { }
+  m_ExecutionInfo(new ExecutionInfo(args)) { }
 
 Engine::Engine(MPI_Comm world, int argc, char** argv) :
-  distrib(new ExecutionInfo(world, argc, argv)) {}
+  m_ExecutionInfo(new ExecutionInfo(world, argc, argv)) {}
 
 Engine::~Engine() {
-  assert(distrib not_eq nullptr);
-  delete distrib;
+  assert(m_ExecutionInfo);
+  delete m_ExecutionInfo;
 }
 
 int Engine::parse() {
-  return distrib->parse();
+  return m_ExecutionInfo->parse();
 }
 
-void Engine::setNthreads(const Uint nThreads) {
-  distrib->nThreads = nThreads;
+void Engine::setNthreads(const uint64_t nThreads) {
+  m_ExecutionInfo->nThreads = nThreads;
 }
 
-void Engine::setNmasters(const Uint nMasters) {
-  distrib->nMasters = nMasters;
+void Engine::setNmasters(const uint64_t nMasters) {
+  m_ExecutionInfo->nMasters = nMasters;
 }
 
-void Engine::setNenvironments(const Uint nEnvironments) {
-  distrib->nEnvironments = nEnvironments;
+void Engine::setNenvironments(const uint64_t nEnvironments) {
+  m_ExecutionInfo->nEnvironments = nEnvironments;
 }
 
-void Engine::setNworkersPerEnvironment(const Uint workerProcessesPerEnv) {
-  distrib->workerProcessesPerEnv = workerProcessesPerEnv;
+void Engine::setNworkersPerEnvironment(const uint64_t workerProcessesPerEnv) {
+  m_ExecutionInfo->workerProcessesPerEnv = workerProcessesPerEnv;
 }
 
-void Engine::setRandSeed(const Uint randSeed) {
-  distrib->randSeed = randSeed;
+void Engine::setRandSeed(const uint64_t randSeed) {
+  m_ExecutionInfo->randSeed = randSeed;
 }
 
-void Engine::setNumTrainingTimeSteps(const Uint numSteps) {
-  distrib->nTrainSteps = numSteps;
-  distrib->bTrain = 1;
+void Engine::setNumTrainingTimeSteps(const uint64_t numSteps) {
+  m_ExecutionInfo->nTrainSteps = numSteps;
+  m_ExecutionInfo->bTrain = 1;
 }
 
-void Engine::setNumEvaluationEpisodes(const Uint numEpisodes) {
-  distrib->nEvalEpisodes = numEpisodes;
-  distrib->bTrain = 0;
+void Engine::setNumEvaluationEpisodes(const uint64_t numEpisodes) {
+  m_ExecutionInfo->nEvalEpisodes = numEpisodes;
+  m_ExecutionInfo->bTrain = 0;
 }
 
 void Engine::setSimulationArgumentsFilePath(const std::string& appSettings) {
-  distrib->appSettings = appSettings;
+  m_ExecutionInfo->appSettings = appSettings;
 }
 
 void Engine::setSimulationSetupFolderPath(const std::string& setupFolder) {
-  distrib->setupFolder = setupFolder;
+  m_ExecutionInfo->setupFolder = setupFolder;
 }
 
 void Engine::setRestartFolderPath(const std::string& restart) {
-  distrib->restart = restart;
+  m_ExecutionInfo->restart = restart;
 }
 
 void Engine::setIsLoggingAllData(const int logAllSamples) {
-  distrib->logAllSamples = logAllSamples;
+  m_ExecutionInfo->logAllSamples = logAllSamples;
 }
 
 void Engine::setAreLearnersOnWorkers(const bool learnersOnWorkers) {
-  distrib->learnersOnWorkers = learnersOnWorkers;
+  m_ExecutionInfo->learnersOnWorkers = learnersOnWorkers;
 }
 
 void Engine::setRedirectAppScreenOutput(const bool redirect) {
-  distrib->redirectAppStdoutToFile = redirect;
+  m_ExecutionInfo->redirectAppStdoutToFile = redirect;
 }
 
 void Engine::init()
 {
-  distrib->initialze();
-  distrib->figureOutWorkersPattern();
+  m_ExecutionInfo->initialze();
+  m_ExecutionInfo->figureOutWorkersPattern();
 
-  if(distrib->bTrain == false && distrib->restart == "none") {
+  if( (!m_ExecutionInfo->bTrain) && m_ExecutionInfo->restart == "none") {
    printf("Did not specify path for restart files, assumed current dir.\n");
-   distrib->restart = ".";
+   m_ExecutionInfo->restart = ".";
   }
 
-  MPI_Barrier(distrib->world_comm);
+  MPI_Barrier(m_ExecutionInfo->world_comm);
 }
 
 void Engine::run(const std::function<void(Communicator*const)> & callback)
 {
-  assert(distrib->workerProcessesPerEnv <= 1);
+  assert(m_ExecutionInfo->workerProcessesPerEnv <= 1);
 
   const environment_callback_t fullcallback = [&](
     Communicator*const sc, const MPI_Comm mc, int argc, char**argv) {
@@ -112,7 +112,7 @@ void Engine::run(const std::function<void(Communicator*const)> & callback)
 void Engine::run(const std::function<void(Communicator*const,
                                           int, char **      )> & callback)
 {
-  assert(distrib->workerProcessesPerEnv <= 1);
+  assert(m_ExecutionInfo->workerProcessesPerEnv <= 1);
 
   const environment_callback_t fullcallback = [&](
     Communicator*const sc, const MPI_Comm mc, int argc, char**argv) {
@@ -137,21 +137,21 @@ void Engine::run(const std::function<void(Communicator*const,
                                           MPI_Comm,
                                           int, char **      )> & callback)
 {
-  distrib->forkableApplication = distrib->workerProcessesPerEnv <= 1;
+  m_ExecutionInfo->forkableApplication = m_ExecutionInfo->workerProcessesPerEnv <= 1;
   init();
-  if(distrib->bIsMaster)
+  if(m_ExecutionInfo->bIsMaster)
   {
-    if(distrib->nForkedProcesses2spawn > 0) {
-      MasterSockets process(*distrib);
+    if(m_ExecutionInfo->nForkedProcesses2spawn > 0) {
+      MasterSockets process(*m_ExecutionInfo);
       process.run(callback);
     } else {
-      MasterMPI process(*distrib);
+      MasterMPI process(*m_ExecutionInfo);
       process.run();
     }
   }
   else
   {
-    Worker process(*distrib);
+    Worker process(*m_ExecutionInfo);
     process.run(callback);
   }
 }

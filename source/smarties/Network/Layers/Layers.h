@@ -31,29 +31,29 @@ namespace smarties
 
 #ifdef USE_OMPSIMD_BLAS
 template<typename T>
-inline static void GEMVomp(const Uint NX, const Uint NY, const Uint S,
+inline static void GEMVomp(const uint64_t NX, const uint64_t NY, const uint64_t S,
                            const T * __restrict__ const _W,
                            const T * __restrict__ const _X,
                                  T * __restrict__ const _Y)
 {
   assert(_W not_eq nullptr && _X not_eq nullptr && _Y not_eq nullptr);
   #if 0
-    for (Uint o=0; o<NY; ++o) {
+    for (uint64_t o=0; o<NY; ++o) {
       const T* __restrict__ const W = _W + S * o;
       T Y = 0;
       #pragma omp simd aligned(_X, W : VEC_WIDTH) reduction(+:Y)
-      for (Uint i=0; i<NX; ++i) Y += W[i] * _X[i];
+      for (uint64_t i=0; i<NX; ++i) Y += W[i] * _X[i];
       _Y[o] += Y;
     }
   #else
-    static constexpr Uint cacheLineLen = 64 / sizeof(T);
-    for (Uint I=0; I<NX; I+=cacheLineLen)
-      for (Uint o=0; o<NY; ++o) {
+    static constexpr uint64_t cacheLineLen = 64 / sizeof(T);
+    for (uint64_t I=0; I<NX; I+=cacheLineLen)
+      for (uint64_t o=0; o<NY; ++o) {
         const T* __restrict__ const W = _W + S * o;
         T Y = 0;
-        const Uint Ninner = std::min(NX, I+cacheLineLen);
+        const uint64_t Ninner = std::min(NX, I+cacheLineLen);
         #pragma omp simd aligned(_X, W : VEC_WIDTH) reduction(+:Y)
-        for (Uint i=I; i<Ninner; ++i) Y += W[i] * _X[i];
+        for (uint64_t i=I; i<Ninner; ++i) Y += W[i] * _X[i];
         _Y[o] += Y;
       }
   #endif
@@ -65,33 +65,33 @@ inline static void GEMVomp(const Uint NX, const Uint NY, const Uint S,
 class Layer
 {
  public:
-  const Uint size, ID, link, bInput;
-  Uint bOutput;
-  Uint spanCompInpGrads = 0, startCompInpGrads = 0;
+  const uint64_t size, ID, link, bInput;
+  uint64_t bOutput;
+  uint64_t spanCompInpGrads = 0, startCompInpGrads = 0;
 
-  inline Uint number() const { return ID; }
-  inline Uint nOutputs() const { return size; }
+  inline uint64_t number() const { return ID; }
+  inline uint64_t nOutputs() const { return size; }
 
   // Should return the number of weights and biases required by layer
-  virtual void requiredParameters(std::vector<Uint>& nWeight,
-                                  std::vector<Uint>& nBiases ) const = 0;
+  virtual void requiredParameters(std::vector<uint64_t>& nWeight,
+                                  std::vector<uint64_t>& nBiases ) const = 0;
 
   // Should return work memory that allows the network to compute forward step
   // and then, without re-calling forward, compute backward step.
   // See the LSTM class for an example on working out of the box.
-  virtual void requiredActivation(std::vector<Uint>& sizes,
-                                  std::vector<Uint>& bOutputs,
-                                  std::vector<Uint>& bInputs) const = 0;
+  virtual void requiredActivation(std::vector<uint64_t>& sizes,
+                                  std::vector<uint64_t>& bOutputs,
+                                  std::vector<uint64_t>& bInputs) const = 0;
   // Some classes might allow user to specify an initial value for the bias
   // vector (eg. parametric layer or linear output layer)
   virtual void biasInitialValues(const std::vector<Real> init) = 0;
 
   Layer(
-    Uint _ID,
-    Uint _size,
+    uint64_t _ID,
+    uint64_t _size,
     bool bOut,
     bool bInp = false,
-    Uint _link = 0):
+    uint64_t _link = 0):
     size(_size), ID(_ID), link(_link), bInput(bInp), bOutput(bOut)  {}
 
 
@@ -120,7 +120,7 @@ class Layer
     return backward(nullptr, curr, nullptr, grad, para);
   }
 
-  void backward(const Uint NI, const Uint NO, const Uint NOsimd, const Uint NR,
+  void backward(const uint64_t NI, const uint64_t NO, const uint64_t NOsimd, const uint64_t NR,
                 const Activation*const prev,
                 const Activation*const curr,
                 const Activation*const next,
@@ -162,16 +162,16 @@ class Layer
     {
       nnReal* const grad_b = grad->B(ID);
       #pragma omp simd aligned(deltas, grad_b : VEC_WIDTH)
-      for(Uint o=0; o<NO; ++o) grad_b[o] += deltas[o];
+      for(uint64_t o=0; o<NO; ++o) grad_b[o] += deltas[o];
     }
 
     {
       const nnReal* const inputs = curr->Y(ID-link);
             nnReal* const grad_w = grad->W(ID);
-      for(Uint i=0; i<NI;  ++i) {
+      for(uint64_t i=0; i<NI;  ++i) {
               nnReal* const G = grad_w + NOsimd*i;
         #pragma omp simd aligned(deltas,inputs,G : VEC_WIDTH)
-        for(Uint o=0; o<NO; ++o) G[o] += inputs[i] * deltas[o];
+        for(uint64_t o=0; o<NO; ++o) G[o] += inputs[i] * deltas[o];
       }
     }
 
@@ -179,10 +179,10 @@ class Layer
     {
       const nnReal* const inputs = prev->Y(ID);
             nnReal* const grad_w = grad->W(ID) +NOsimd*NI;
-      for(Uint i=0; i<NR;  ++i) {
+      for(uint64_t i=0; i<NR;  ++i) {
         nnReal* const G = grad_w + NOsimd*i;
         #pragma omp simd aligned(deltas, inputs, G : VEC_WIDTH)
-        for(Uint o=0; o<NO; ++o) G[o] += inputs[i] * deltas[o];
+        for(uint64_t o=0; o<NO; ++o) G[o] += inputs[i] * deltas[o];
       }
     }
   }
@@ -199,21 +199,21 @@ class Layer
 class InputLayer: public Layer
 {
  public:
-  InputLayer(Uint _size, Uint _ID) : Layer(_ID, _size, false, true) { }
+  InputLayer(uint64_t _size, uint64_t _ID) : Layer(_ID, _size, false, true) { }
   std::string printSpecs() const override {
     return "(" + std::to_string(ID) + ") Input Layer of size:"
            + std::to_string(size) + "\n";
   }
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     assert(nWeight.size() == 0 && nBiases.size() == 0);
     nWeight.push_back(0);
     nBiases.push_back(0);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     assert(sizes.size() == 0 && bOutputs.size() == 0);
     sizes.push_back(size);
     bOutputs.push_back(false);
@@ -232,7 +232,7 @@ class InputLayer: public Layer
       // From from 6 to 111 stdevs away, we smoothly transition to sqrt(x).
       // Beyond 111 stdevs away we log the input to avoid exploding gradients.
       nnReal* const ret = curr->Y(ID);
-      for (Uint j=0; j<size; ++j) {
+      for (uint64_t j=0; j<size; ++j) {
         const nnReal sign = ret[j]>0 ? 1 : -1, absX = std::fabs(ret[j]);
         if        (absX > 111) {
           ret[j] = sign * 9.02 * std::log(absX - 56.88);
@@ -259,9 +259,9 @@ class InputLayer: public Layer
 
 class JoinLayer: public Layer
 {
-  const Uint nJoin;
+  const uint64_t nJoin;
  public:
-  JoinLayer(Uint _ID, Uint _N, Uint _nJ): Layer(_ID,_N,false), nJoin(_nJ) {
+  JoinLayer(uint64_t _ID, uint64_t _N, uint64_t _nJ): Layer(_ID,_N,false), nJoin(_nJ) {
     assert(nJoin>1);
   }
   std::string printSpecs() const override {
@@ -270,15 +270,15 @@ class JoinLayer: public Layer
            + std::to_string(nJoin) + " layers\n";
   }
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     assert(nWeight.size() == 0 && nBiases.size() == 0);
     nWeight.push_back(0);
     nBiases.push_back(0);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     assert(sizes.size() == 0 && bOutputs.size() == 0);
     sizes.push_back(size);
     bOutputs.push_back(bOutput);
@@ -289,10 +289,10 @@ class JoinLayer: public Layer
                 const Activation*const curr,
                 const Parameters*const para) const override {
     nnReal* const ret = curr->Y(ID);
-    Uint k = 0;
-    for (Uint i=1; i<=nJoin; ++i) {
+    uint64_t k = 0;
+    for (uint64_t i=1; i<=nJoin; ++i) {
       const nnReal* const inputs = curr->Y(ID-i);
-      for (Uint j=0; j<curr->sizes[ID-i]; ++j) ret[k++] = inputs[j];
+      for (uint64_t j=0; j<curr->sizes[ID-i]; ++j) ret[k++] = inputs[j];
     }
     assert(k==size);
   }
@@ -304,11 +304,11 @@ class JoinLayer: public Layer
                   const Parameters*const para) const override
   {
     const nnReal* const errors = curr->E(ID);
-    Uint k = 0;
-    for (Uint i=1; i<=nJoin; ++i)
+    uint64_t k = 0;
+    for (uint64_t i=1; i<=nJoin; ++i)
     {
       nnReal* const ret = curr->E(ID-i);
-      for (Uint j=0; j<curr->sizes[ID-i]; ++j) ret[j] = errors[k++];
+      for (uint64_t j=0; j<curr->sizes[ID-i]; ++j) ret[j] = errors[k++];
     }
     assert(k==size);
   }
@@ -324,21 +324,21 @@ class JoinLayer: public Layer
 class ParametricResidualLayer: public Layer
 {
  public:
-  ParametricResidualLayer(Uint _ID, Uint _N): Layer(_ID, _N, false) { }
+  ParametricResidualLayer(uint64_t _ID, uint64_t _N): Layer(_ID, _N, false) { }
 
   std::string printSpecs() const override {
     return "("+ std::to_string(ID) +") Parametric Residual Connection of size:"
            + std::to_string(size) + "\n";
   }
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nWeight.push_back(size);
     nBiases.push_back(size);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(size);
     bOutputs.push_back(bOutput);
     bInputs.push_back(false);
@@ -355,10 +355,10 @@ class ParametricResidualLayer: public Layer
     const nnReal* const W = para->W(ID);
     const nnReal* const B = para->B(ID);
     const nnReal* const inp = curr->Y(ID-2);
-    const Uint sizeInp = std::min(curr->sizes[ID-2], size);
+    const uint64_t sizeInp = std::min(curr->sizes[ID-2], size);
 
     #pragma omp simd aligned(ret, inp, W, B : VEC_WIDTH)
-    for (Uint j=0; j<sizeInp; ++j) ret[j] += inp[j] * W[j] + B[j];
+    for (uint64_t j=0; j<sizeInp; ++j) ret[j] += inp[j] * W[j] + B[j];
   }
 
   void backward(  const Activation*const prev,
@@ -373,11 +373,11 @@ class ParametricResidualLayer: public Layer
     nnReal* const gradInp = curr->E(ID-2);
     const nnReal* const W = para->W(ID);
     const nnReal* const inp = curr->Y(ID-2);
-    const Uint sizeInp = std::min(curr->sizes[ID-2], size);
+    const uint64_t sizeInp = std::min(curr->sizes[ID-2], size);
 
     if(grad == nullptr) {
       #pragma omp simd aligned(delta, W, gradInp : VEC_WIDTH)
-      for (Uint j=0; j<sizeInp; ++j) gradInp[j] += delta[j] * W[j];
+      for (uint64_t j=0; j<sizeInp; ++j) gradInp[j] += delta[j] * W[j];
       return;
     }
 
@@ -385,7 +385,7 @@ class ParametricResidualLayer: public Layer
     nnReal* const gradW = grad->W(ID);
 
     #pragma omp simd aligned(delta,inp,W, gradB,gradW,gradInp : VEC_WIDTH)
-    for (Uint j=0; j<sizeInp; ++j) {
+    for (uint64_t j=0; j<sizeInp; ++j) {
       gradInp[j] += delta[j] * W[j];
       gradW[j] += delta[j] * inp[j];
       gradB[j] += delta[j];
@@ -395,16 +395,16 @@ class ParametricResidualLayer: public Layer
   void initialize(std::mt19937& G, const Parameters*const W,
                   Real initializationFac) const override
   {
-    for(Uint o=0; o<size; ++o) W->B(ID)[o] = 0.0;
-    for(Uint o=0; o<size; ++o) W->W(ID)[o] = 1.0;
+    for(uint64_t o=0; o<size; ++o) W->B(ID)[o] = 0.0;
+    for(uint64_t o=0; o<size; ++o) W->W(ID)[o] = 1.0;
   }
   size_t  save(const Parameters * const para,
                           float * tmp) const override
   {
     const nnReal* const bias = para->B(ID);
     const nnReal* const weight = para->W(ID);
-    for(Uint o=0; o<size; ++o) *(tmp++) = (float) weight[o];
-    for(Uint o=0; o<size; ++o) *(tmp++) = (float) bias[o];
+    for(uint64_t o=0; o<size; ++o) *(tmp++) = (float) weight[o];
+    for(uint64_t o=0; o<size; ++o) *(tmp++) = (float) bias[o];
     return 2*size;
   }
   size_t restart(const Parameters * const para,
@@ -412,8 +412,8 @@ class ParametricResidualLayer: public Layer
   {
     nnReal* const bias = para->B(ID);
     nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<size; ++n) weight[n] = (nnReal) *(tmp++);
-    for (Uint n=0; n<size; ++n) bias[n] = (nnReal) *(tmp++);
+    for (uint64_t n=0; n<size; ++n) weight[n] = (nnReal) *(tmp++);
+    for (uint64_t n=0; n<size; ++n) bias[n] = (nnReal) *(tmp++);
     return 2*size;
   }
 };
@@ -421,21 +421,21 @@ class ParametricResidualLayer: public Layer
 class ResidualLayer: public Layer
 {
  public:
-  ResidualLayer(Uint _ID, Uint _N): Layer(_ID,_N,false) { }
+  ResidualLayer(uint64_t _ID, uint64_t _N): Layer(_ID,_N,false) { }
 
   std::string printSpecs() const override {
     return "(" + std::to_string(ID) + ") Residual Connection of size:"
            + std::to_string(size) + "\n";
   }
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nWeight.push_back(0);
     nBiases.push_back(0);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(size);
     bOutputs.push_back(bOutput);
     bInputs.push_back(false);
@@ -447,12 +447,12 @@ class ResidualLayer: public Layer
   {
     nnReal* const ret = curr->Y(ID);
     std::memset( ret, 0, size * sizeof(nnReal) );
-    for (Uint i=1; i<=2; ++i)
+    for (uint64_t i=1; i<=2; ++i)
     {
-      const Uint sizeInp = std::min(curr->sizes[ID-i], size);
+      const uint64_t sizeInp = std::min(curr->sizes[ID-i], size);
       const nnReal* const inputs = curr->Y(ID-i);
       #pragma omp simd aligned(ret, inputs : VEC_WIDTH)
-      for (Uint j=0; j<sizeInp; ++j) ret[j] += inputs[j];
+      for (uint64_t j=0; j<sizeInp; ++j) ret[j] += inputs[j];
     }
   }
 
@@ -462,8 +462,8 @@ class ResidualLayer: public Layer
                   const Parameters*const grad,
                   const Parameters*const para) const override {
     const nnReal* const errors = curr->E(ID);
-    for (Uint i=1; i<=2; ++i) {
-      const Uint sizeInp = std::min(curr->sizes[ID-i], size);
+    for (uint64_t i=1; i<=2; ++i) {
+      const uint64_t sizeInp = std::min(curr->sizes[ID-i], size);
       memcpy( curr->E(ID-i), errors, sizeInp * sizeof(nnReal) );
     }
   }
@@ -482,24 +482,24 @@ class ParamLayer: public Layer
   std::vector<nnReal> initVals;
  public:
 
-  ParamLayer(Uint _ID, Uint _size, std::string funcType, std::vector<Real>init)
+  ParamLayer(uint64_t _ID, uint64_t _size, std::string funcType, std::vector<Real>init)
     : Layer(_ID, _size, true), func(makeFunction(funcType)) {
     biasInitialValues(init);
   }
   std::string printSpecs() const override {
     std::string ret = "(" + std::to_string(ID) + ") Parameter Layer of size:"
            + std::to_string(size) + ". Initialized:";
-    for(Uint i=0; i<size; ++i) { ret += " " + std::to_string(initVals[i]); }
+    for(uint64_t i=0; i<size; ++i) { ret += " " + std::to_string(initVals[i]); }
     return ret + "\n";
   }
 
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nWeight.push_back(0); nBiases.push_back(size);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(size); bOutputs.push_back(true); bInputs.push_back(bInput);
   }
   void biasInitialValues(const std::vector<Real> init) override {
@@ -514,7 +514,7 @@ class ParamLayer: public Layer
           nnReal* const inputs = curr->X(ID);
           nnReal* const output = curr->Y(ID);
     const nnReal* const bias = para->B(ID);
-    for (Uint n=0; n<size; ++n) {
+    for (uint64_t n=0; n<size; ++n) {
       inputs[n] = bias[n];
       output[n] = func->eval(bias[n]);
     }
@@ -532,13 +532,13 @@ class ParamLayer: public Layer
 
     if(grad == nullptr)
     {
-      for(Uint o=0; o<size; ++o)
+      for(uint64_t o=0; o<size; ++o)
         deltas[o] *= func->evalDiff(inputs[o], outval[o]);
     }
     else
     {
       nnReal* const grad_b = grad->B(ID);
-      for(Uint o=0; o<size; ++o) {
+      for(uint64_t o=0; o<size; ++o) {
         deltas[o] *= func->evalDiff(inputs[o], outval[o]);
         grad_b[o] += deltas[o];
       }
@@ -549,20 +549,20 @@ class ParamLayer: public Layer
                   Real initializationFac) const override
   {
     nnReal* const biases = W->B(ID);
-    for(Uint o=0; o<size; ++o) biases[o] = func->inverse(initVals[o]);
+    for(uint64_t o=0; o<size; ++o) biases[o] = func->inverse(initVals[o]);
   }
   size_t  save(const Parameters * const para,
                           float * tmp) const override
   {
     const nnReal* const bias = para->B(ID);
-    for (Uint n=0; n<size; ++n) tmp[n] = (float) bias[n];
+    for (uint64_t n=0; n<size; ++n) tmp[n] = (float) bias[n];
     return size;
   }
   size_t restart(const Parameters * const para,
                       const float * tmp) const override
   {
     nnReal* const bias = para->B(ID);
-    for (Uint n=0; n<size; ++n) bias[n] = (nnReal) tmp[n];
+    for (uint64_t n=0; n<size; ++n) bias[n] = (nnReal) tmp[n];
     return size;
   }
 };

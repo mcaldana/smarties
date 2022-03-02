@@ -18,9 +18,9 @@
 namespace smarties
 {
 
-void DPG::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+void DPG::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
 
   if(thrID==0) profiler->start("FWD");
   const Rvec pvec = actor->forward(bID, t); // network compute
@@ -61,11 +61,11 @@ void DPG::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
   #ifdef DPG_LEARN_STDEV
     const Real polGradCoef = (target - pval[0]) * std::min(CmaxRet, RHO);
     const Rvec SPG = POL.policyGradient(MB.action(bID,t), polGradCoef);
-    for (Uint i=0; i<nA; ++i) polGrad[i+nA] = isOff? 0 : SPG[i+nA];
+    for (uint64_t i=0; i<nA; ++i) polGrad[i+nA] = isOff? 0 : SPG[i+nA];
   #else
     // Next line keeps stdev at user's value, else NN penal might cause drift.
     const Rvec fixGrad = POL.fixExplorationGrad(settings.explNoise);
-    for (Uint i=0; i<nA; ++i) polGrad[i+nA] = fixGrad[i+nA];
+    for (uint64_t i=0; i<nA; ++i) polGrad[i+nA] = fixGrad[i+nA];
   #endif
 
   //if(!thrID) cout << "G "<<print(detPolG) << endl;

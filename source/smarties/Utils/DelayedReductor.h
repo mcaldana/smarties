@@ -20,7 +20,7 @@ template<typename T>
 struct DelayedReductor
 {
   const MPI_Comm mpicomm;
-  const Uint arysize, mpisize;
+  const uint64_t arysize, mpisize;
   const ExecutionInfo & distrib;
   MPI_Request buffRequest = MPI_REQUEST_NULL;
   std::vector<T> return_ret = std::vector<T>(arysize, 0);
@@ -38,7 +38,7 @@ struct DelayedReductor
 
   std::vector<T> get(const bool accurate = false);
 
-  template<Uint I>
+  template<uint64_t I>
   T get(const bool accurate = false)
   {
     const std::vector<T> ret = get(accurate);

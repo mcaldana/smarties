@@ -17,33 +17,33 @@ namespace smarties
 template<typename Action_t>
 class CMALearner: public Learner_approximator
 {
-  const Uint ESpopSize = settings.ESpopSize;
-  const Uint nOwnEnvs = distrib.nOwnedEnvironments;
-  const Uint nOwnAgents = distrib.nOwnedAgentsPerAlgo;
-  const Uint nOwnAgentsPerEnv = nOwnAgents / nOwnEnvs;
+  const uint64_t ESpopSize = settings.ESpopSize;
+  const uint64_t nOwnEnvs = distrib.nOwnedEnvironments;
+  const uint64_t nOwnAgents = distrib.nOwnedAgentsPerAlgo;
+  const uint64_t nOwnAgentsPerEnv = nOwnAgents / nOwnEnvs;
 
   // counter per each env of how many agents have currently terminated on this
   //   simulation. no agent can restart unless they all have terminated a sim
-  std::vector<Uint> curNumEndedPerEnv = std::vector<Uint>(nOwnEnvs, 0);
-  std::vector<Uint> curNumStartedPerEnv = std::vector<Uint>(nOwnEnvs, 0);
+  std::vector<uint64_t> curNumEndedPerEnv = std::vector<uint64_t>(nOwnEnvs, 0);
+  std::vector<uint64_t> curNumStartedPerEnv = std::vector<uint64_t>(nOwnEnvs, 0);
 
   std::mutex workload_mutex;
-  Uint lastWorkLoadStarted = 0;
+  uint64_t lastWorkLoadStarted = 0;
 
-  std::vector<Uint> weightIDs = std::vector<Uint>(nOwnEnvs, 0);
+  std::vector<uint64_t> weightIDs = std::vector<uint64_t>(nOwnEnvs, 0);
 
   std::vector<Rvec> R = std::vector<Rvec>(nOwnEnvs, Rvec(ESpopSize, 0) );
-  std::vector<std::vector<Uint>> Ns = std::vector<std::vector<Uint>>(nOwnEnvs,
-                                            std::vector<Uint>(ESpopSize, 0) );
+  std::vector<std::vector<uint64_t>> Ns = std::vector<std::vector<uint64_t>>(nOwnEnvs,
+                                            std::vector<uint64_t>(ESpopSize, 0) );
 
-  static std::vector<Uint> count_pol_outputs(const ActionInfo*const aI);
-  static std::vector<Uint> count_pol_starts(const ActionInfo*const aI);
+  static std::vector<uint64_t> count_pol_outputs(const ActionInfo*const aI);
+  static std::vector<uint64_t> count_pol_starts(const ActionInfo*const aI);
 
   void prepareCMALoss() override;
 
   void assignWeightID(const Agent& agent);
   void computeAction(Agent& agent, const Rvec netOutput) const;
-  void Train(const MiniBatch&MB,const Uint wID,const Uint bID) const override;
+  void Train(const MiniBatch&MB,const uint64_t wID,const uint64_t bID) const override;
 
 public:
   CMALearner(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_);
@@ -56,12 +56,12 @@ public:
   bool blockGradientUpdates() const override;
   bool blockDataAcquisition() const override;
 
-  static Uint getnDimPolicy(const ActionInfo*const aI);
+  static uint64_t getnDimPolicy(const ActionInfo*const aI);
 };
 
-template<> Uint CMALearner<Uint>::getnDimPolicy(const ActionInfo*const aI);
+template<> uint64_t CMALearner<uint64_t>::getnDimPolicy(const ActionInfo*const aI);
 
-template<> Uint CMALearner<Rvec>::getnDimPolicy(const ActionInfo*const aI);
+template<> uint64_t CMALearner<Rvec>::getnDimPolicy(const ActionInfo*const aI);
 
 }
 #endif

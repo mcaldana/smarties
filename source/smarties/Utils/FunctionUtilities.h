@@ -58,10 +58,10 @@ inline T nnSafeExp(const T val)
   return safeExp<T>(val);
 }
 
-inline std::vector<Uint> count_indices(const std::vector<Uint>& outs)
+inline std::vector<uint64_t> count_indices(const std::vector<uint64_t>& outs)
 {
-  std::vector<Uint> ret(outs.size(), 0); //index 0 is 0
-  for(Uint i=1; i<outs.size(); ++i) ret[i] = ret[i-1] + outs[i-1];
+  std::vector<uint64_t> ret(outs.size(), 0); //index 0 is 0
+  for(uint64_t i=1; i<outs.size(); ++i) ret[i] = ret[i-1] + outs[i-1];
   return ret;
 }
 
@@ -71,19 +71,19 @@ inline T annealRate(const T eta, const Real t, const Real time)
   return eta / (1 + (T) t * time);
 }
 
-inline Uint roundUp(const Real N, const Uint size)
+inline uint64_t roundUp(const Real N, const uint64_t size)
 {
   return std::ceil(N / size) * size;
 }
 template<typename T = nnReal>
-inline Uint roundUpSimd(const Real N)
+inline uint64_t roundUpSimd(const Real N)
 {
   static_assert(VEC_WIDTH % sizeof(T) == 0, "Invalid vectorization");
   return roundUp(N, VEC_WIDTH / sizeof(T) );
 }
 
 template<typename T = nnReal>
-inline T* allocate_dirty(const Uint _size)
+inline T* allocate_dirty(const uint64_t _size)
 {
   T* ret = nullptr;
   assert(_size > 0);
@@ -93,7 +93,7 @@ inline T* allocate_dirty(const Uint _size)
 }
 
 template<typename T = nnReal>
-inline T* allocate_ptr(const Uint _size)
+inline T* allocate_ptr(const uint64_t _size)
 {
   T* const ret = allocate_dirty<T>(_size);
   memset(ret, 0, roundUpSimd(_size) * sizeof(T) );
@@ -101,10 +101,10 @@ inline T* allocate_ptr(const Uint _size)
 }
 
 template<typename T = nnReal>
-inline std::vector<T*> allocate_vec(const std::vector<Uint>& _sizes)
+inline std::vector<T*> allocate_vec(const std::vector<uint64_t>& _sizes)
 {
   std::vector<T*> ret(_sizes.size(), nullptr);
-  for(Uint i=0; i<_sizes.size(); ++i) ret[i] = allocate_ptr<T>(_sizes[i]);
+  for(uint64_t i=0; i<_sizes.size(); ++i) ret[i] = allocate_ptr<T>(_sizes[i]);
   return ret;
 }
 
@@ -206,7 +206,7 @@ inline Rvec sum3Grads(const Rvec& f, const Rvec& g, const Rvec& h)
   assert(g.size() == f.size());
   assert(h.size() == f.size());
   Rvec ret(f.size());
-  for(Uint i=0; i<f.size(); ++i) ret[i] = f[i]+g[i]+h[i];
+  for(uint64_t i=0; i<f.size(); ++i) ret[i] = f[i]+g[i]+h[i];
   return ret;
 }
 
@@ -214,7 +214,7 @@ inline Rvec sum2Grads(const Rvec& f, const Rvec& g)
 {
   assert(g.size() == f.size());
   Rvec ret(f.size());
-  for(Uint i=0; i<f.size(); ++i) ret[i] = f[i]+g[i];
+  for(uint64_t i=0; i<f.size(); ++i) ret[i] = f[i]+g[i];
   return ret;
 }
 
@@ -222,7 +222,7 @@ inline Rvec penalizeReFER(const Rvec& grad, const Rvec& penal, const Real beta)
 {
   assert(grad.size() == penal.size());
   Rvec ret(grad.size());
-  for(Uint i=0; i<grad.size(); ++i)
+  for(uint64_t i=0; i<grad.size(); ++i)
     ret[i] = beta * grad[i]+ (1-beta) * penal[i];
   return ret;
 }
@@ -231,17 +231,17 @@ inline Rvec weightSum2Grads(const Rvec& f, const Rvec& g, const Real W)
 {
   assert(g.size() == f.size());
   Rvec ret(f.size());
-  for(Uint i=0; i<f.size(); ++i) ret[i] = W*f[i]+ (1-W)*g[i];
+  for(uint64_t i=0; i<f.size(); ++i) ret[i] = W*f[i]+ (1-W)*g[i];
   return ret;
 }
 
 inline Rvec trust_region_update(const Rvec& grad,
-  const Rvec& trust, const Uint nA, const Real delta)
+  const Rvec& trust, const uint64_t nA, const Real delta)
 {
   assert(grad.size() == trust.size());
   Rvec ret(nA);
   Real dot=0, norm = std::numeric_limits<Real>::epsilon();
-  for (Uint j=0; j<nA; ++j) {
+  for (uint64_t j=0; j<nA; ++j) {
     norm += trust[j] * trust[j];
     dot +=  trust[j] *  grad[j];
   }
@@ -250,7 +250,7 @@ inline Rvec trust_region_update(const Rvec& grad,
   //if(proj>0) {printf("Hit DKL constraint\n");fflush(0);}
   //else {printf("Not Hit DKL constraint\n");fflush(0);}
   //#endif
-  for (Uint j=0; j<nA; ++j) ret[j] = grad[j]-proj*trust[j];
+  for (uint64_t j=0; j<nA; ++j) ret[j] = grad[j]-proj*trust[j];
   return ret;
 }
 
@@ -268,11 +268,11 @@ inline T sumSquared(const std::vector<T> & vec)
 }
 
 template<typename T>
-inline Uint maxInd(const T& vec)
+inline uint64_t maxInd(const T& vec)
 {
   auto maxVal = vec[0];
-  Uint indBest = 0;
-  for (Uint i=1; i<vec.size(); ++i)
+  uint64_t indBest = 0;
+  for (uint64_t i=1; i<vec.size(); ++i)
     if (vec[i]>maxVal) {
       maxVal = vec[i];
       indBest = i;
@@ -280,11 +280,11 @@ inline Uint maxInd(const T& vec)
   return indBest;
 }
 
-inline Uint maxInd(const Rvec& pol, const Uint start, const Uint N)
+inline uint64_t maxInd(const Rvec& pol, const uint64_t start, const uint64_t N)
 {
   Real Val = -1e9;
-  Uint Nbest = 0;
-  for (Uint i=start; i<start+N; ++i)
+  uint64_t Nbest = 0;
+  for (uint64_t i=start; i<start+N; ++i)
       if (pol[i]>Val) { Val = pol[i]; Nbest = i-start; }
   return Nbest;
 }

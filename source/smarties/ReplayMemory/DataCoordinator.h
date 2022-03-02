@@ -23,7 +23,7 @@ class DataCoordinator
   ParameterBlob & params;
   const ExecutionInfo & distrib = replay->distrib;
   const MDPdescriptor & MDP = replay->MDP;
-  const Uint MDPID = replay->MDP.localID;
+  const uint64_t MDPID = replay->MDP.localID;
 
   std::vector<std::unique_ptr<Episode>> episodes;
 
@@ -31,12 +31,12 @@ class DataCoordinator
   // each master sends the size (in floats) of the episode
   // then sends the episode itself. same goes for receiving
   MPI_Comm sharingComm = MPI_COMM_NULL;
-  Uint sharingSize=0, sharingRank=0, sharingDest=0;
+  uint64_t sharingSize=0, sharingRank=0, sharingDest=0;
   std::vector<MPI_Request> sharingReq;
   std::vector<Fvec> sharingSeq;
 
   MPI_Comm workerComm = MPI_COMM_NULL;
-  Uint workerSize=0, workerRank=0;
+  uint64_t workerSize=0, workerRank=0;
 
   std::mutex complete_mutex;
 

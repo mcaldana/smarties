@@ -18,18 +18,18 @@ namespace smarties
 struct Parameters;
 using ParametersPtr_t = std::shared_ptr<Parameters>;
 
-static inline nnReal* allocate_param(const Uint size, const Real mpiSize)
+static inline nnReal* allocate_param(const uint64_t size, const Real mpiSize)
 {
   // round up such that distributed ops can be vectorized on each rank:
-  Uint extraSize = Utilities::roundUpSimd( std::ceil(size/mpiSize)) * mpiSize;
+  uint64_t extraSize = Utilities::roundUpSimd( std::ceil(size/mpiSize)) * mpiSize;
   return Utilities::allocate_ptr<nnReal>(extraSize);
 }
 
 struct Parameters
 {
-  const std::vector<Uint> nBiases, nWeights;
-  std::vector<Uint> indBiases, indWeights;
-  const Uint nParams, nLayers, mpiSize;
+  const std::vector<uint64_t> nBiases, nWeights;
+  std::vector<uint64_t> indBiases, indWeights;
+  const uint64_t nParams, nLayers, mpiSize;
   mutable bool written = false;
   // array containing all parameters of network contiguously
   //(used by optimizer and for MPI reductions)
@@ -51,9 +51,9 @@ struct Parameters
     memcpy(params, tgt->params, nParams*sizeof(nnReal));
   }
 
-  Parameters(const std::vector<Uint> _nWeights,
-             const std::vector<Uint> _nBiases,
-             const Uint _mpisize ) :
+  Parameters(const std::vector<uint64_t> _nWeights,
+             const std::vector<uint64_t> _nBiases,
+             const uint64_t _mpisize ) :
     nBiases(_nBiases), nWeights(_nWeights),
     nParams(_computeNParams(_nWeights, _nBiases)),
     nLayers(_nWeights.size()), mpiSize(_mpisize),
@@ -67,24 +67,24 @@ struct Parameters
   {
     #pragma omp parallel num_threads(grads.size())
     {
-      const Uint thrI = omp_get_thread_num(), thrN = omp_get_num_threads();
+      const uint64_t thrI = omp_get_thread_num(), thrN = omp_get_num_threads();
       assert( thrN == grads.size() && thrI < thrN );
       assert( nParams == grads[thrI]->nParams );
-      const Uint shift = Utilities::roundUpSimd( nParams/ (Real)thrN );
+      const uint64_t shift = Utilities::roundUpSimd( nParams/ (Real)thrN );
       assert( thrN * shift >= nParams ); // ensure coverage
       const nnReal *const src = grads[thrI]->params;
             nnReal *const dst = params;
-      for(Uint i=0; i<thrN; ++i)
+      for(uint64_t i=0; i<thrN; ++i)
       {
-        const Uint turn = (thrI + i) % thrN;
-        const Uint start = turn * shift;
-        const Uint end = std::min(nParams, (turn+1)*shift);
+        const uint64_t turn = (thrI + i) % thrN;
+        const uint64_t start = turn * shift;
+        const uint64_t end = std::min(nParams, (turn+1)*shift);
         //#pragma omp critical
         //{ cout<<turn<<" "<<start<<" "<<end<<" "<<thrI<<" "
         //      <<thrN<<" "<<shift<<" "<<nParams<<endl; fflush(0); }
         if(grads[thrI]->written) {
           #pragma omp simd aligned(dst, src : VEC_WIDTH)
-          for(Uint j=start; j<end; ++j) {
+          for(uint64_t j=start; j<end; ++j) {
             assert( Utilities::isValidValue(src[j]) );
             dst[j] += src[j];
             #ifndef NDEBUG
@@ -106,21 +106,21 @@ struct Parameters
   {
     long double sumWeights = 0;
     #pragma omp parallel for schedule(static) reduction(+:sumWeights)
-    for (Uint w=0; w<nParams; ++w) sumWeights += std::pow(params[w],2);
+    for (uint64_t w=0; w<nParams; ++w) sumWeights += std::pow(params[w],2);
     return std::sqrt(sumWeights);
   }
   long double compute_weight_L1norm() const
   {
     long double sumWeights = 0;
     #pragma omp parallel for schedule(static) reduction(+:sumWeights)
-    for (Uint w=0; w<nParams; ++w) sumWeights += std::fabs(params[w]);
+    for (uint64_t w=0; w<nParams; ++w) sumWeights += std::fabs(params[w]);
     return sumWeights;
   }
   long double compute_weight_dist(const ParametersPtr_t& TGT) const
   {
     long double dist = 0;
     #pragma omp parallel for schedule(static) reduction(+ : dist)
-    for(Uint w=0; w<nParams; ++w) dist += std::pow(params[w]-TGT->params[w], 2);
+    for(uint64_t w=0; w<nParams; ++w) dist += std::pow(params[w]-TGT->params[w], 2);
     return std::sqrt(dist);
   }
 
@@ -132,22 +132,22 @@ struct Parameters
   void set(const nnReal val) const
   {
     #pragma omp parallel for schedule(static)
-    for(Uint j=0; j<nParams; ++j) params[j] = val;
+    for(uint64_t j=0; j<nParams; ++j) params[j] = val;
   }
 
-  nnReal* W(const Uint layerID) const {
+  nnReal* W(const uint64_t layerID) const {
     assert(layerID < nLayers);
     return params + indWeights[layerID];
   }
-  nnReal* B(const Uint layerID) const {
+  nnReal* B(const uint64_t layerID) const {
     assert(layerID < nLayers);
     return params + indBiases[layerID];
   }
-  Uint NW(const Uint layerID) const {
+  uint64_t NW(const uint64_t layerID) const {
     assert(layerID < nLayers);
     return nWeights[layerID];
   }
-  Uint NB(const Uint layerID) const {
+  uint64_t NB(const uint64_t layerID) const {
     assert(layerID < nLayers);
     return nBiases[layerID];
   }
@@ -156,14 +156,14 @@ private:
   //each layer requests a certain number of parameters, here compute contiguous
   //memory required such that each layer gets an aligned pointer to both
   //its first bias and and first weight, allowing SIMD ops on all layers
-  Uint _computeNParams(std::vector<Uint> _nWeights, std::vector<Uint> _nBiases)
+  uint64_t _computeNParams(std::vector<uint64_t> _nWeights, std::vector<uint64_t> _nBiases)
   {
     assert(_nWeights.size() == _nBiases.size());
-    const Uint _nLayers = _nWeights.size();
-    Uint nTotPara = 0;
-    indBiases  = std::vector<Uint>(_nLayers, 0);
-    indWeights = std::vector<Uint>(_nLayers, 0);
-    for(Uint i=0; i<_nLayers; ++i) {
+    const uint64_t _nLayers = _nWeights.size();
+    uint64_t nTotPara = 0;
+    indBiases  = std::vector<uint64_t>(_nLayers, 0);
+    indWeights = std::vector<uint64_t>(_nLayers, 0);
+    for(uint64_t i=0; i<_nLayers; ++i) {
       indWeights[i] = nTotPara;
       nTotPara += Utilities::roundUpSimd(_nWeights[i]);
       indBiases[i] = nTotPara;
@@ -177,10 +177,10 @@ private:
 };
 
 inline std::vector<ParametersPtr_t> allocManyParams(const ParametersPtr_t& W,
-                                                    const Uint populationSize)
+                                                    const uint64_t populationSize)
 {
   std::vector<ParametersPtr_t> ret(populationSize, nullptr);
-  for(Uint i=0; i<populationSize; ++i) ret[i] = W->allocateEmptyAlike();
+  for(uint64_t i=0; i<populationSize; ++i) ret[i] = W->allocateEmptyAlike();
   return ret;
 }
 

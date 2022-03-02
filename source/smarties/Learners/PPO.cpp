@@ -27,7 +27,7 @@
 namespace smarties
 {
 
-template class PPO<Discrete_policy, Uint>;
+template class PPO<Discrete_policy, uint64_t>;
 template class PPO<Continuous_policy, Rvec>;
 
 template<typename Policy_t, typename Action_t>

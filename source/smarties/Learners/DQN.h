@@ -16,7 +16,7 @@ namespace smarties
 
 class DQN : public Learner_approximator
 {
-  const Uint nA = MDP.maxActionLabel;
+  const uint64_t nA = MDP.maxActionLabel;
   const bool bUseRetrace = settings.returnsEstimator != "none";
 
   Real annealingFactor() const
@@ -30,7 +30,7 @@ class DQN : public Learner_approximator
     else return 1 - mynstep * settings.epsAnneal; // annealing
   }
 
-  void Train(const MiniBatch&MB, const Uint wID,const Uint bID) const override;
+  void Train(const MiniBatch&MB, const uint64_t wID,const uint64_t bID) const override;
 
 public:
   DQN(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_);

@@ -11,10 +11,10 @@ namespace smarties
 
 template<typename Advantage_t, typename Policy_t, typename Action_t>
 void RACER<Advantage_t, Policy_t, Action_t>::
-Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
   const Approximator& NET = * networks[0]; // racer always uses only one net
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
 
   if(thrID==0) profiler->start("FWD");
   const Rvec O = NET.forward(bID, t); // network compute

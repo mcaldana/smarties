@@ -184,8 +184,8 @@ class NET(nn.Module):
 
 # template<typename Advantage_t, typename Policy_t, typename Action_t>
 # Rvec RACER<Advantage_t, Policy_t, Action_t>::
-# compute(Episode& S, const Uint samp, const Rvec& outVec,
-#         const Policy_t& POL, const Uint thrID) const
+# compute(Episode& S, const uint64_t samp, const Rvec& outVec,
+#         const Policy_t& POL, const uint64_t thrID) const
 
 #   const auto ADV = prepare_advantage<Advantage_t>(outVec, &POL);
 #   const Real A_cur = ADV.computeAdvantage(POL.sampAct), V_cur = outVec[VsID];
@@ -218,8 +218,8 @@ class NET(nn.Module):
 
 # template<typename Advantage_t, typename Policy_t, typename Action_t>
 # Rvec RACER<Advantage_t, Policy_t, Action_t>::
-# offPolCorrUpdate(Episode& S, const Uint t, const Rvec output,
-#   const Policy_t& pol, const Uint thrID) const
+# offPolCorrUpdate(Episode& S, const uint64_t t, const Rvec output,
+#   const Policy_t& pol, const uint64_t thrID) const
 # {
 #   const auto adv = prepare_advantage<Advantage_t>(output, &pol);
 #   const Real A_cur = adv.computeAdvantage(pol.sampAct);

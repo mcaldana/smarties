@@ -17,13 +17,13 @@ namespace smarties
 namespace MemoryProcessing
 {
 
-using returnsEstimator_f = std::function<Fval(const Episode& EP, const Uint t)>;
+using returnsEstimator_f = std::function<Fval(const Episode& EP, const uint64_t t)>;
 returnsEstimator_f createReturnEstimator(const MemoryBuffer & RM);
 
 inline Fval updateReturnEstimator(
-  Episode & EP, const Sint lastUpdated, const returnsEstimator_f & compute)
+  Episode & EP, const int64_t lastUpdated, const returnsEstimator_f & compute)
 {
-  assert(lastUpdated + 1 < (Sint) EP.nsteps());
+  assert(lastUpdated + 1 < (int64_t) EP.nsteps());
   assert(EP.stateValue.size() == EP.nsteps());
   assert(EP.offPolicImpW.size() == EP.nsteps());
   assert(EP.actionAdvantage.size() == EP.nsteps());
@@ -35,7 +35,7 @@ inline Fval updateReturnEstimator(
   } else EP.returnEstimator.back() = EP.stateValue.back();
 
   Fval sumErr2 = 0;
-  for(Sint t = lastUpdated; t>=0; --t) {
+  for(int64_t t = lastUpdated; t>=0; --t) {
     const Fval oldEstimate = EP.returnEstimator[t];
     EP.returnEstimator[t] = compute(EP, t);
     sumErr2 += std::pow(oldEstimate - EP.returnEstimator[t], 2);
@@ -98,7 +98,7 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
   if(not RM.distrib.bTrain) return; //if not training, keep the stored values
 
   MDPdescriptor & MDP = RM.MDP;
-  const Uint setSize = RM.nStoredEps(), dimS = MDP.dimStateObserved;
+  const uint64_t setSize = RM.nStoredEps(), dimS = MDP.dimStateObserved;
   const Real eta = RM.settings.learnrate, epsAnneal = RM.settings.epsAnneal;
   const Real learnR = Utilities::annealRate(eta, RM.nGradSteps(), epsAnneal);
   const Real annealLearnR = std::min((Real) 1, rRateFac * learnR);
@@ -113,14 +113,14 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
     {
       std::vector<long double> thNewSSum(dimS, 0), thNewSSqSum(dimS, 0);
       #pragma omp for schedule(dynamic, 1) nowait
-      for(Uint i=0; i<setSize; ++i) {
+      for(uint64_t i=0; i<setSize; ++i) {
         const Episode & EP = RM.get(i);
-        const Uint N = EP.ndata();
+        const uint64_t N = EP.ndata();
         count += N;
-        for(Uint j=0; j<N; ++j) {
+        for(uint64_t j=0; j<N; ++j) {
           const long double drk = EP.rewards[j+1] - MDP.rewardsMean;
           newRSum += drk; newRSqSum += drk * drk;
-          for(Uint k=0; k<dimS && WS>0; ++k) {
+          for(uint64_t k=0; k<dimS && WS>0; ++k) {
             const long double dsk = EP.states[j][k] - MDP.stateMean[k];
             thNewSSum[k] += dsk; thNewSSqSum[k] += dsk * dsk;
           }
@@ -128,7 +128,7 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
       }
       if(WS>0) {
         #pragma omp critical
-        for(Uint k=0; k<dimS; ++k) {
+        for(uint64_t k=0; k<dimS; ++k) {
           newSSum[k]   += thNewSSum[k];
           newSSqSum[k] += thNewSSqSum[k];
         }
@@ -178,7 +178,7 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
   {
     const LDvec SSum1(& newSRstats[0], & newSRstats[dimS]);
     const LDvec SSum2(& newSRstats[dimS], & newSRstats[2 * dimS]);
-    for(Uint k=0; k<dimS; ++k)
+    for(uint64_t k=0; k<dimS; ++k)
       updateStats(MDP.stateMean[k], MDP.stateStdDev[k], MDP.stateScale[k], WS,
                   SSum1[k] / count, SSum2[k] / count);
   }
@@ -186,7 +186,7 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
 
 void updateTrainingStatistics(MemoryBuffer& RM)
 {
-  const Uint nGradSteps = RM.nGradSteps() + 1;
+  const uint64_t nGradSteps = RM.nGradSteps() + 1;
   const bool bRecomputeProperties = ( nGradSteps % 1000) == 0;
   //shift data / gradient counters to maintain grad stepping to sample
   // collection ratio prescirbed by obsPerStep
@@ -199,14 +199,14 @@ void updateTrainingStatistics(MemoryBuffer& RM)
   const bool bNeedsReturnEst = RM.settings.returnsEstimator not_eq "none";
   const returnsEstimator_f returnsCompute = createReturnEstimator(RM);
 
-  Uint nOffPol = 0, nRetUpdates = 0;
+  uint64_t nOffPol = 0, nRetUpdates = 0;
   Fval maxAbsE = -1e9, maxQ = -1e9, minQ =  1e9;
   Real sumDKL=0, sumE2=0, sumQ2=0, sumQ1=0, sumR=0, sumERet=0;
-  const Uint setSize = RM.nStoredEps();
+  const uint64_t setSize = RM.nStoredEps();
   #pragma omp parallel for schedule(static, 1)  \
     reduction(max : maxAbsE, maxQ) reduction(min : minQ) \
     reduction(+ : nOffPol, nRetUpdates, sumDKL, sumE2, sumQ2, sumQ1, sumR, sumERet)
-  for (Uint i = 0; i < setSize; ++i)
+  for (uint64_t i = 0; i < setSize; ++i)
   {
     Episode & EP = RM.get(i);
     if (bRecomputeProperties) {
@@ -234,7 +234,7 @@ void updateTrainingStatistics(MemoryBuffer& RM)
 
   ReplayStats & stats = RM.stats;
   if (RM.CmaxRet<=1) nOffPol = 0; //then this counter and its effects are skipped
-  const Uint nData = RM.nStoredSteps();
+  const uint64_t nData = RM.nStoredSteps();
   stats.nFarPolicySteps = nOffPol;
   const Real maxN = RM.settings.maxTotObsNum, BS = RM.settings.batchSize;
   const Real learnRefer = 0.1 * BS / std::max(maxN, (Real) nData);
@@ -352,21 +352,21 @@ void applyEpisodesRemovalAlgo(MemoryBuffer & RM)
 
 void histogramImportanceWeights(const MemoryBuffer & RM)
 {
-  static constexpr Uint nBins = 81;
+  static constexpr uint64_t nBins = 81;
   const Real beg = std::log(1e-3), end = std::log(50.0);
   Fval bounds[nBins+1] = { 0 };
-  Uint counts[nBins]   = { 0 };
-  for (Uint i = 1; i < nBins; ++i)
+  uint64_t counts[nBins]   = { 0 };
+  for (uint64_t i = 1; i < nBins; ++i)
       bounds[i] = std::exp(beg + (end-beg) * (i-1.0)/(nBins-2.0) );
   bounds[nBins] = std::numeric_limits<Fval>::max()-1e2; // -100 avoids inf later
 
-  const Uint setSize = RM.nStoredEps();
+  const uint64_t setSize = RM.nStoredEps();
   #pragma omp parallel for schedule(dynamic, 1) reduction(+ : counts[:nBins])
-  for (Uint i = 0; i < setSize; ++i) {
+  for (uint64_t i = 0; i < setSize; ++i) {
     const auto & EP = RM.get(i);
-    for (Uint j=0; j < EP.ndata(); ++j) {
+    for (uint64_t j=0; j < EP.ndata(); ++j) {
       const auto rho = EP.offPolicImpW[j];
-      for (Uint b = 0; b < nBins; ++b)
+      for (uint64_t b = 0; b < nBins; ++b)
         if(rho >= bounds[b] && rho < bounds[b+1]) counts[b] ++;
     }
   }
@@ -377,18 +377,18 @@ void histogramImportanceWeights(const MemoryBuffer & RM)
   buff<<"_____________________________________________________________________";
   buff<<"\nOFF-POLICY IMP WEIGHTS HISTOGRAMS\n";
   buff<<"weight pi/mu (harmonic mean of histogram's bounds):\n";
-  for (Uint b = 0; b < nBins; ++b)
+  for (uint64_t b = 0; b < nBins; ++b)
     Utilities::real2SS(buff, harmonicMean(bounds[b], bounds[b+1]), 6, 1);
   buff<<"\nfraction of dataset:\n";
   const Real dataSize = RM.nStoredSteps();
-  for (Uint b = 0; b < nBins; ++b)
+  for (uint64_t b = 0; b < nBins; ++b)
     Utilities::real2SS(buff, counts[b]/dataSize, 6, 1);
   buff<<"\n";
   buff<<"_____________________________________________________________________";
   printf("%s\n\n", buff.str().c_str());
 }
 
-inline Fval computeRetrace(const Episode& EP, const Uint t,
+inline Fval computeRetrace(const Episode& EP, const uint64_t t,
                     const Fval gamma, const Fval lambda)
 {
   assert(t+1 < EP.actionAdvantage.size() and t+1 < EP.stateValue.size());
@@ -399,7 +399,7 @@ inline Fval computeRetrace(const Episode& EP, const Uint t,
   return R + gamma * (V + lambda * EP.clippedOffPolW<Fval>(t+1) * (Q - A - V));
 }
 
-inline Fval computeRetraceExplBonus(const Episode& EP, const Uint t,
+inline Fval computeRetraceExplBonus(const Episode& EP, const uint64_t t,
                 const Fval B, const Fval C, const Fval G, const Fval L)
 {
   const Fval V = EP.stateValue[t+1], A = EP.actionAdvantage[t+1];
@@ -407,7 +407,7 @@ inline Fval computeRetraceExplBonus(const Episode& EP, const Uint t,
   return C * E + computeRetrace(EP, t, G, L);
 }
 
-inline Fval computeGAE(const Episode& EP, const Uint t,
+inline Fval computeGAE(const Episode& EP, const uint64_t t,
                 const Fval gamma, const Fval lambda)
 {
   // From Munos et al. 2016, https://arxiv.org/pdf/1506.02438.pdf
@@ -419,9 +419,9 @@ returnsEstimator_f createReturnEstimator(const MemoryBuffer & RM)
 {
   const Fval gamma = RM.settings.gamma, lambda = RM.settings.lambda;
 
-  std::function<Fval(const Episode& EP, const Uint t)> ret;
+  std::function<Fval(const Episode& EP, const uint64_t t)> ret;
   if(RM.settings.returnsEstimator == "retrace") {
-    ret = [=](const Episode& EP, const Uint t) {
+    ret = [=](const Episode& EP, const uint64_t t) {
       return computeRetrace(EP, t, gamma, lambda);
     };
   }
@@ -431,18 +431,18 @@ returnsEstimator_f createReturnEstimator(const MemoryBuffer & RM)
     const Fval baseline = RM.stats.maxAbsError;
     //static constexpr Real EPS = std::numeric_limits<float>::epsilon();
     //const Fval baseline = std::sqrt(std::max(EPS, RM.stats.avgSquaredErr));
-    ret = [=](const Episode& EP, const Uint t) {
+    ret = [=](const Episode& EP, const uint64_t t) {
       return computeRetraceExplBonus(EP, t, baseline, coef, gamma, lambda);
     };
   }
   else
   if(RM.settings.returnsEstimator == "GAE") {
-    ret = [=](const Episode& EP, const Uint t) {
+    ret = [=](const Episode& EP, const uint64_t t) {
       return computeGAE(EP, t, gamma, lambda);
     };
   }
   else {
-    ret = [=](const Episode& EP, const Uint t) {
+    ret = [=](const Episode& EP, const uint64_t t) {
       return computeRetrace(EP, t, gamma, lambda);
     };
   }
@@ -451,7 +451,7 @@ returnsEstimator_f createReturnEstimator(const MemoryBuffer & RM)
 
 void computeReturnEstimator(const MemoryBuffer & RM, Episode & EP)
 {
-  const Uint epLen = EP.nsteps();
+  const uint64_t epLen = EP.nsteps();
   if (RM.settings.returnsEstimator == "none") return;
   const returnsEstimator_f returnsCompute = createReturnEstimator(RM);
   updateReturnEstimator(EP, epLen-2, returnsCompute);
@@ -464,15 +464,15 @@ void rescaleAllReturnEstimator(MemoryBuffer & RM)
 
   #pragma omp parallel
   {
-    const Uint setSize = RM.nStoredEps();
+    const uint64_t setSize = RM.nStoredEps();
     #pragma omp for schedule(dynamic, 1) nowait
-    for(Uint i=0; i<setSize; ++i) {
+    for(uint64_t i=0; i<setSize; ++i) {
       Episode& EP = RM.get(i);
       updateReturnEstimator(EP, EP.nsteps()-2, returnsCompute);
     }
-    const Uint todoSize = RM.nInProgress();
+    const uint64_t todoSize = RM.nInProgress();
     #pragma omp for schedule(dynamic, 1) nowait
-    for(Uint i=0; i<todoSize; ++i) {
+    for(uint64_t i=0; i<todoSize; ++i) {
       Episode& EP = RM.getInProgress(i);
       if(EP.returnEstimator.size() == 0) continue;
       updateReturnEstimator(EP, EP.nsteps()-2, returnsCompute);

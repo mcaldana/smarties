@@ -62,9 +62,9 @@ struct Episode
   //////////////////////////////////////////////////////////////////////////////
   // did ep terminate (i.e. terminal state) or was a time out (i.e. V(s_end)!=0
   bool bReachedTermState = false;
-  Sint ID = -1; //identifier of the episode, counter
-  Sint just_sampled = -1; //largest time step sampled during latest grad update
-  Sint agentID = -1; //agent id within environment which generated the epiosode
+  int64_t ID = -1; //identifier of the episode, counter
+  int64_t just_sampled = -1; //largest time step sampled during latest grad update
+  int64_t agentID = -1; //agent id within environment which generated the epiosode
   Fval totR = 0; // sum of rewards obtained during the episode
 
   // Fval is just a storage format, probably float while Real is prob. double
@@ -109,7 +109,7 @@ struct Episode
 
   mutable std::mutex dataset_mutex; // used to update stats
 
-  void updateCumulative_atomic(const Uint t, const Fval E, const Fval D,
+  void updateCumulative_atomic(const uint64_t t, const Fval E, const Fval D,
                                const Fval W, const Fval C, const Fval invC)
   {
     assert(nsteps() == deltaValue.size());
@@ -128,7 +128,7 @@ struct Episode
     deltaValue[t] = E; KullbLeibDiv[t] = D; offPolicImpW[t] = W;
   }
 
-  void updateValues_atomic(const Uint t, const Fval V, const Fval Q)
+  void updateValues_atomic(const uint64_t t, const Fval V, const Fval Q)
   {
     assert(nsteps() == stateValue.size());
     assert(nsteps() == actionAdvantage.size());
@@ -144,22 +144,22 @@ struct Episode
     stateValue[t] = V; actionAdvantage[t] = Q-V;
   }
 
-  Uint ndata() const // how much data to train from? ie. not terminal
+  uint64_t ndata() const // how much data to train from? ie. not terminal
   {
     assert(states.size());
     if(states.size()==0) return 0;
     else return states.size() - 1;
   }
-  Uint nsteps() const // total number of time steps observed
+  uint64_t nsteps() const // total number of time steps observed
   {
     return states.size();
   }
 
-  bool isTerminal(const Uint t) const
+  bool isTerminal(const uint64_t t) const
   {
     return t+1 == states.size() && bReachedTermState;
   }
-  bool isTruncated(const Uint t) const
+  bool isTruncated(const uint64_t t) const
   {
     return t+1 == states.size() && not bReachedTermState;
   }
@@ -171,12 +171,12 @@ struct Episode
   template<typename V = nnReal, typename T>
   std::vector<V> standardizedState(const T samp) const
   {
-    const Uint dimS = MDP.dimStateObserved, nAppended = MDP.nAppendedObs;
+    const uint64_t dimS = MDP.dimStateObserved, nAppended = MDP.nAppendedObs;
     std::vector<V> ret( dimS * (1+nAppended) );
-    for (Uint j=0, k=0; j <= nAppended; ++j) {
-      const Uint t = std::max((Uint) samp - j, (Uint) 0);
+    for (uint64_t j=0, k=0; j <= nAppended; ++j) {
+      const uint64_t t = std::max((uint64_t) samp - j, (uint64_t) 0);
       assert(states[t].size() == dimS);
-      for (Uint i=0; i<dimS; ++i, ++k)
+      for (uint64_t i=0; i<dimS; ++i, ++k)
         ret[k] = (states[t][i] - MDP.stateMean[i]) * MDP.stateScale[i];
     }
     return ret;
@@ -184,7 +184,7 @@ struct Episode
   template<typename V = Real, typename T>
   V scaledReward(const T samp) const
   {
-    assert((Uint) samp < rewards.size());
+    assert((uint64_t) samp < rewards.size());
     return (rewards[samp] - MDP.rewardsMean) * MDP.rewardsScale;
   }
   template<typename V = Real, typename T>
@@ -198,7 +198,7 @@ struct Episode
     return deltaValue[samp] * deltaValue[samp];
   }
 
-  void finalize(const Uint index);
+  void finalize(const uint64_t index);
   void initPreTrainErrorPlaceholder(const Fval avgError);
 
   int restart(FILE * f);
@@ -208,26 +208,26 @@ struct Episode
   std::vector<Fval> packEpisode();
   bool isEqual(const Episode & S) const;
 
-  static Uint computeTotalEpisodeSize(const MDPdescriptor& MDP, const Uint Nstep)
+  static uint64_t computeTotalEpisodeSize(const MDPdescriptor& MDP, const uint64_t Nstep)
   {
-    const Uint tuplSize = MDP.dimState + MDP.dimAction + MDP.policyVecDim + 1;
-    static constexpr Uint infoSize = 6; //adv,val,ret, mse,dkl,impW
+    const uint64_t tuplSize = MDP.dimState + MDP.dimAction + MDP.policyVecDim + 1;
+    static constexpr uint64_t infoSize = 6; //adv,val,ret, mse,dkl,impW
     //extras: bReachedTermState,ID,sampled,agentID x2 for safety
-    static constexpr Uint extraSize = 10;
-    const Uint ret = (tuplSize+infoSize)*Nstep + extraSize;
+    static constexpr uint64_t extraSize = 10;
+    const uint64_t ret = (tuplSize+infoSize)*Nstep + extraSize;
     return ret;
   }
-  static Uint computeTotalEpisodeNstep(const MDPdescriptor& MDP, const Uint size)
+  static uint64_t computeTotalEpisodeNstep(const MDPdescriptor& MDP, const uint64_t size)
   {
-    const Uint tuplSize = MDP.dimState + MDP.dimAction + MDP.policyVecDim + 1;
-    static constexpr Uint infoSize = 6; //adv,val,ret, mse,dkl,impW
-    static constexpr Uint extraSize = 10;
-    const Uint nStep = (size - extraSize)/(tuplSize+infoSize);
+    const uint64_t tuplSize = MDP.dimState + MDP.dimAction + MDP.policyVecDim + 1;
+    static constexpr uint64_t infoSize = 6; //adv,val,ret, mse,dkl,impW
+    static constexpr uint64_t extraSize = 10;
+    const uint64_t nStep = (size - extraSize)/(tuplSize+infoSize);
     assert(Episode::computeTotalEpisodeSize(MDP, nStep) == size);
     return nStep;
   }
 
-  std::vector<float> logToFile(const Uint iterStep) const;
+  std::vector<float> logToFile(const uint64_t iterStep) const;
 };
 
 } // namespace smarties

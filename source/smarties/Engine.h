@@ -44,19 +44,19 @@ public:
 
   VISIBLE int parse();
 
-  VISIBLE void setNthreads(const Uint nThreads);
+  VISIBLE void setNthreads(const uint64_t nThreads);
 
-  VISIBLE void setNmasters(const Uint nMasters);
+  VISIBLE void setNmasters(const uint64_t nMasters);
 
-  VISIBLE void setNenvironments(const Uint nEnvironments);
+  VISIBLE void setNenvironments(const uint64_t nEnvironments);
 
-  VISIBLE void setNworkersPerEnvironment(const Uint workerProcessesPerEnv);
+  VISIBLE void setNworkersPerEnvironment(const uint64_t workerProcessesPerEnv);
 
-  VISIBLE void setRandSeed(const Uint randSeed);
+  VISIBLE void setRandSeed(const uint64_t randSeed);
 
-  VISIBLE void setNumTrainingTimeSteps(const Uint numSteps);
+  VISIBLE void setNumTrainingTimeSteps(const uint64_t numSteps);
 
-  VISIBLE void setNumEvaluationEpisodes(const Uint numEpisodes);
+  VISIBLE void setNumEvaluationEpisodes(const uint64_t numEpisodes);
 
   VISIBLE void setSimulationArgumentsFilePath(const std::string& appSettings);
 
@@ -71,7 +71,7 @@ public:
   VISIBLE void setRedirectAppScreenOutput(const bool redirect = true);
 
 private:
-  ExecutionInfo * const distrib;
+  ExecutionInfo * const m_ExecutionInfo;
 
   void init();
 };

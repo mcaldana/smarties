@@ -20,7 +20,7 @@ struct Quadratic_advantage: public Quadratic_term
   const Continuous_policy* const policy;
 
   //Normalized quadratic advantage, with own mean
-  Quadratic_advantage(const std::vector<Uint>&starts,
+  Quadratic_advantage(const std::vector<uint64_t>&starts,
                       const ActionInfo& aI,
                       const Rvec& out,
                       const Continuous_policy*const pol = nullptr) :
@@ -31,23 +31,23 @@ struct Quadratic_advantage: public Quadratic_term
   {
     assert(act.size()==nA);
     Rvec dErrdP(nA*nA, 0), dPol(nA, 0), dAct(nA);
-    for (Uint j=0; j<nA; ++j) dAct[j] = act[j] - mean[j];
+    for (uint64_t j=0; j<nA; ++j) dAct[j] = act[j] - mean[j];
 
     assert(policy == nullptr);
-    //for (Uint j=0; j<nA; ++j) dPol[j] = policy->mean[j] - mean[j];
+    //for (uint64_t j=0; j<nA; ++j) dPol[j] = policy->mean[j] - mean[j];
 
-    for (Uint i=0; i<nA; ++i)
-    for (Uint j=0; j<=i; ++j) {
+    for (uint64_t i=0; i<nA; ++i)
+    for (uint64_t j=0; j<=i; ++j) {
       Real dOdPij = -dAct[j] * dAct[i];
 
       dErrdP[nA*j +i] = Qer*dOdPij;
       dErrdP[nA*i +j] = Qer*dOdPij; //if j==i overwrite, avoid `if'
     }
 
-    for (Uint j=0, kl = start_matrix; j<nA; ++j)
-      for (Uint i=0; i<=j; ++i) {
+    for (uint64_t j=0, kl = start_matrix; j<nA; ++j)
+      for (uint64_t i=0; i<=j; ++i) {
         Real dErrdL = 0;
-        for (Uint k=i; k<nA; ++k) dErrdL += dErrdP[nA*j +k] * L[nA*k +i];
+        for (uint64_t k=i; k<nA; ++k) dErrdL += dErrdP[nA*j +k] * L[nA*k +i];
 
         if(i==j)
           netGradient[kl] = dErrdL * PosDefFunction::_evalDiff(netOutputs[kl]);
@@ -58,10 +58,10 @@ struct Quadratic_advantage: public Quadratic_term
 
     if(start_mean>0) {
       assert(netGradient.size() >= start_mean+nA);
-      for (Uint a=0, ka=start_mean; a<nA; ++a, ++ka)
+      for (uint64_t a=0, ka=start_mean; a<nA; ++a, ++ka)
       {
         Real val = 0;
-        for (Uint i=0; i<nA; ++i)
+        for (uint64_t i=0; i<nA; ++i)
           val += Qer * matrix[nA*a + i] * (dAct[i]-dPol[i]);
 
         netGradient[ka] = val;
@@ -77,7 +77,7 @@ struct Quadratic_advantage: public Quadratic_term
     if(policy not_eq nullptr)
     { //subtract expectation from advantage of action
       ret += quadraticTerm(policy->getMean());
-      for(Uint i=0; i<nA; ++i)
+      for(uint64_t i=0; i<nA; ++i)
         ret += matrix[nA*i+i] * policy->getVariance(i);
     }
     return 0.5*ret;
@@ -102,15 +102,15 @@ struct Quadratic_advantage: public Quadratic_term
   {
     if(policy == nullptr) return 0;
     Rvec PvarP(nA*nA, 0);
-    for (Uint j=0; j<nA; ++j)
-    for (Uint i=0; i<nA; ++i)
-    for (Uint k=0; k<nA; ++k) {
-      const Uint k1 = nA*j + k;
-      const Uint k2 = nA*k + i;
+    for (uint64_t j=0; j<nA; ++j)
+    for (uint64_t i=0; i<nA; ++i)
+    for (uint64_t k=0; k<nA; ++k) {
+      const uint64_t k1 = nA*j + k;
+      const uint64_t k2 = nA*k + i;
       PvarP[nA*j+i]+= matrix[k1] * std::pow(policy->getStdev(i),2) * matrix[k2];
     }
     Real ret = quadMatMul(policy->getMean(), PvarP);
-    for (Uint i=0; i<nA; ++i)
+    for (uint64_t i=0; i<nA; ++i)
       ret += PvarP[nA*i+i] * std::pow(policy->getStdev(i), 2) / 2;
     return ret;
   }

@@ -25,18 +25,18 @@ class Collector;
 class Learner
 {
 protected:
-  Uint freqPrint = 1000;
+  uint64_t freqPrint = 1000;
   ExecutionInfo & distrib;
   HyperParameters settings;
   MDPdescriptor & MDP;
 
 public:
   const MPI_Comm learnersComm = distrib.learners_train_comm;
-  const Uint learn_rank = MPICommRank(learnersComm);
-  const Uint learn_size = MPICommSize(learnersComm);
-  const Uint nThreads = distrib.nThreads, nAgents = distrib.nAgents;
+  const uint64_t learn_rank = MPICommRank(learnersComm);
+  const uint64_t learn_size = MPICommSize(learnersComm);
+  const uint64_t nThreads = distrib.nThreads, nAgents = distrib.nAgents;
 
-  const Uint policyVecDim = MDP.policyVecDim;
+  const uint64_t policyVecDim = MDP.policyVecDim;
   const ActionInfo aInfo = ActionInfo(MDP);
   const StateInfo  sInfo = StateInfo(MDP);
 
@@ -73,7 +73,7 @@ public:
   Learner(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_);
   virtual ~Learner();
 
-  void setLearnerName(const std::string lName, const Uint id) {
+  void setLearnerName(const std::string lName, const uint64_t id) {
     learner_name = lName;
     data->learnID = id;
   }

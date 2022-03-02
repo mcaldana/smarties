@@ -23,15 +23,15 @@ Episode::Episode(const std::vector<Fval>& data, const MDPdescriptor& _MDP)
 
 std::vector<Fval> Episode::packEpisode()
 {
-  const Uint dS = MDP.dimStateObserved, dI = MDP.dimState-MDP.dimStateObserved;
-  const Uint dA = MDP.dimAction, dP = MDP.policyVecDim, N = states.size();
+  const uint64_t dS = MDP.dimStateObserved, dI = MDP.dimState-MDP.dimStateObserved;
+  const uint64_t dA = MDP.dimAction, dP = MDP.policyVecDim, N = states.size();
   assert(states.size() == actions.size() && states.size() == policies.size());
-  const Uint totalSize = Episode::computeTotalEpisodeSize(MDP, N);
+  const uint64_t totalSize = Episode::computeTotalEpisodeSize(MDP, N);
   assert( N == Episode::computeTotalEpisodeNstep(MDP, totalSize) );
   std::vector<Fval> ret(totalSize, 0);
   Fval* buf = ret.data();
 
-  for (Uint i = 0; i<N; ++i)
+  for (uint64_t i = 0; i<N; ++i)
   {
     assert(states[i].size() == dS and latent_states[i].size() == dI);
     assert(actions[i].size() == dA and policies[i].size() == dP);
@@ -72,13 +72,13 @@ std::vector<Fval> Episode::packEpisode()
 
   /////////////////////////////////////////////////////////////////////////////
 
-  assert((Uint) (buf-ret.data()) == (dS + dA + dP + dI + 7) * N);
+  assert((uint64_t) (buf-ret.data()) == (dS + dA + dP + dI + 7) * N);
 
   char * charPos = (char*) buf;
   memcpy(charPos, &bReachedTermState, sizeof(bool)); charPos += sizeof(bool);
-  memcpy(charPos, &          ID, sizeof(Sint)); charPos += sizeof(Sint);
-  memcpy(charPos, &just_sampled, sizeof(Sint)); charPos += sizeof(Sint);
-  memcpy(charPos, &     agentID, sizeof(Sint)); charPos += sizeof(Sint);
+  memcpy(charPos, &          ID, sizeof(int64_t)); charPos += sizeof(int64_t);
+  memcpy(charPos, &just_sampled, sizeof(int64_t)); charPos += sizeof(int64_t);
+  memcpy(charPos, &     agentID, sizeof(int64_t)); charPos += sizeof(int64_t);
 
   // assert(buf - ret.data() == (ptrdiff_t) totalSize);
   return ret;
@@ -86,21 +86,21 @@ std::vector<Fval> Episode::packEpisode()
 
 void Episode::save(FILE * f)
 {
-  const Uint seq_len = states.size();
-  fwrite(& seq_len, sizeof(Uint), 1, f);
+  const uint64_t seq_len = states.size();
+  fwrite(& seq_len, sizeof(uint64_t), 1, f);
   Fvec buffer = packEpisode();
   fwrite(buffer.data(), sizeof(Fval), buffer.size(), f);
 }
 
 void Episode::unpackEpisode(const std::vector<Fval>& data)
 {
-  const Uint dS = MDP.dimStateObserved, dI = MDP.dimState-MDP.dimStateObserved;
-  const Uint dA = MDP.dimAction, dP = MDP.policyVecDim;
-  const Uint N = Episode::computeTotalEpisodeNstep(MDP, data.size());
+  const uint64_t dS = MDP.dimStateObserved, dI = MDP.dimState-MDP.dimStateObserved;
+  const uint64_t dA = MDP.dimAction, dP = MDP.policyVecDim;
+  const uint64_t N = Episode::computeTotalEpisodeNstep(MDP, data.size());
   assert( data.size() == Episode::computeTotalEpisodeSize(MDP, N) );
   const Fval* buf = data.data();
   assert(states.size() == 0);
-  for (Uint i = 0; i<N; ++i) {
+  for (uint64_t i = 0; i<N; ++i) {
     states.push_back(  Fvec(buf, buf + dS));
     rewards.push_back(buf[dS]); buf += dS + 1;
     actions.push_back( Rvec(buf, buf + dA)); buf += dA;
@@ -117,23 +117,23 @@ void Episode::unpackEpisode(const std::vector<Fval>& data)
   offPolicImpW = std::vector<Fval>(buf, buf + N); buf += N;
   KullbLeibDiv = std::vector<Fval>(buf, buf + N); buf += N;
   /////////////////////////////////////////////////////////////////////////////
-  assert((Uint) (buf - data.data()) == (dS + dA + dP + dI + 7) * N);
+  assert((uint64_t) (buf - data.data()) == (dS + dA + dP + dI + 7) * N);
   priorityImpW = std::vector<float>(N, 1);
   totR = Utilities::sum(rewards);
   /////////////////////////////////////////////////////////////////////////////
 
   const char * charPos = (const char *) buf;
   memcpy(&bReachedTermState, charPos, sizeof(bool)); charPos += sizeof(bool);
-  memcpy(&          ID, charPos, sizeof(Sint)); charPos += sizeof(Sint);
-  memcpy(&just_sampled, charPos, sizeof(Sint)); charPos += sizeof(Sint);
-  memcpy(&     agentID, charPos, sizeof(Sint)); charPos += sizeof(Sint);
+  memcpy(&          ID, charPos, sizeof(int64_t)); charPos += sizeof(int64_t);
+  memcpy(&just_sampled, charPos, sizeof(int64_t)); charPos += sizeof(int64_t);
+  memcpy(&     agentID, charPos, sizeof(int64_t)); charPos += sizeof(int64_t);
 }
 
 int Episode::restart(FILE * f)
 {
-  Uint N = 0;
-  if(fread(& N, sizeof(Uint), 1, f) != 1) return 1;
-  const Uint totalSize = Episode::computeTotalEpisodeSize(MDP, N);
+  uint64_t N = 0;
+  if(fread(& N, sizeof(uint64_t), 1, f) != 1) return 1;
+  const uint64_t totalSize = Episode::computeTotalEpisodeSize(MDP, N);
   std::vector<Fval> buffer(totalSize);
   if(fread(buffer.data(), sizeof(Fval), totalSize, f) != totalSize)
     die("mismatch");
@@ -182,14 +182,14 @@ bool Episode::isEqual(const Episode & S) const
   return true;
 }
 
-std::vector<float> Episode::logToFile(const Uint iterStep) const
+std::vector<float> Episode::logToFile(const uint64_t iterStep) const
 {
-  const Uint dS = MDP.dimStateObserved, dI = MDP.dimState - dS;
-  const Uint dA = MDP.dimAction, dP = MDP.policyVecDim, N = states.size();
+  const uint64_t dS = MDP.dimStateObserved, dI = MDP.dimState - dS;
+  const uint64_t dA = MDP.dimAction, dP = MDP.policyVecDim, N = states.size();
 
   std::vector<float> buffer(N * (4 + dS + dI + dA + dP));
   float * pos = buffer.data();
-  for (Uint t=0; t<N; ++t)
+  for (uint64_t t=0; t<N; ++t)
   {
     assert(states[t].size() == dS and dI == latent_states[t].size());
     assert(actions[t].size() == dA and dP == policies[t].size());
@@ -212,11 +212,11 @@ std::vector<float> Episode::logToFile(const Uint iterStep) const
 
 void Episode::updateCumulative(const Fval C, const Fval invC)
 {
-  const Uint N = ndata();
+  const uint64_t N = ndata();
   const Fval invN = 1 / (Fval) N;
-  Uint nFarPol = 0;
+  uint64_t nFarPol = 0;
   Fval _sumE2=0, _maxAE = -1e9, _maxQ = -1e9, _sumQ2=0, _minQ = 1e9, _sumQ1=0;
-  for (Uint t = 0; t < N; ++t) {
+  for (uint64_t t = 0; t < N; ++t) {
     // float precision may cause DKL to be slightly negative:
     assert(KullbLeibDiv[t] >= - FVAL_EPS && offPolicImpW[t] >= 0);
     // sequence is off policy if offPol W is out of 1/C : C
@@ -241,10 +241,10 @@ void Episode::updateCumulative(const Fval C, const Fval invC)
   avgKLDivergence = invN * Utilities::sum(KullbLeibDiv);
 }
 
-void Episode::finalize(const Uint index)
+void Episode::finalize(const uint64_t index)
 {
   ID = index;
-  const Uint N = nsteps();
+  const uint64_t N = nsteps();
   stateValue.resize(N, 0);
   actionAdvantage.resize(N, 0);
   // whatever the meaning of deltaValue, initialize with all zeros

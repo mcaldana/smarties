@@ -20,10 +20,10 @@ struct Quadratic_term
   using PosDefFunction = SoftPlus;
   using BoundedActFunction = HardSigmoid;
 
-  const Uint start_matrix, start_mean, nA = aInfo.dim(), nL = compute_nL(aInfo);
+  const uint64_t start_matrix, start_mean, nA = aInfo.dim(), nL = compute_nL(aInfo);
   const Rvec netOutputs;
   const Rvec L, mean, matrix;
-  static Uint compute_nL(const ActionInfo& aI)
+  static uint64_t compute_nL(const ActionInfo& aI)
   {
     return (aI.dim() * aI.dim() + aI.dim())/2;
   }
@@ -31,14 +31,14 @@ struct Quadratic_term
   Rvec getParam() const
   {
      Rvec ret(nL, 0);
-     for (Uint ind=0, j=0; j<nA; ++j)
-       for (Uint i=0; i<nA; ++i)
+     for (uint64_t ind=0, j=0; j<nA; ++j)
+       for (uint64_t i=0; i<nA; ++i)
          if (i<j)       ret[ind++] = matrix[nA*j +i];
          else if (i==j) ret[ind++] = matrix[nA*j +i];
      return ret;
   }
 
-  Quadratic_term(const ActionInfo& aI, Uint _startMat, Uint _startMean,
+  Quadratic_term(const ActionInfo& aI, uint64_t _startMat, uint64_t _startMean,
     const Rvec& out, const Rvec _m = Rvec()) : aInfo(aI),
     start_matrix(_startMat), start_mean(_startMean), netOutputs(out),
     L(extract_L()), mean(extract_mean(_m)), matrix(extract_matrix())
@@ -54,8 +54,8 @@ protected:
   {
     assert(act.size() == nA && mat.size() == nA*nA);
     Real ret = 0;
-    for (Uint j=0; j<nA; ++j)
-    for (Uint i=0; i<nA; ++i)
+    for (uint64_t j=0; j<nA; ++j)
+    for (uint64_t i=0; i<nA; ++i)
       ret += (act[i]-mean[i])*mat[nA*j+i]*(act[j]-mean[j]);
     return ret;
   }
@@ -69,9 +69,9 @@ protected:
   {
     assert(netOutputs.size()>=start_matrix+nL);
     Rvec ret(nA*nA);
-    Uint kL = start_matrix;
-    for (Uint j=0; j<nA; ++j)
-    for (Uint i=0; i<nA; ++i)
+    uint64_t kL = start_matrix;
+    for (uint64_t j=0; j<nA; ++j)
+    for (uint64_t i=0; i<nA; ++i)
       if (i<j)
         ret[nA*j + i] = netOutputs[kL++];
       else if (i==j)
@@ -89,7 +89,7 @@ protected:
     } else { // else from network output
       assert(start_mean!=0 && netOutputs.size()>=start_mean+nA);
       Rvec ret = Rvec(&(netOutputs[start_mean]), &(netOutputs[start_mean])+nA);
-      for (Uint i=0; i<nA; ++i)
+      for (uint64_t i=0; i<nA; ++i)
         if(aInfo.isBounded(i)) ret[i] = BoundedActFunction::_eval(ret[i]);
       return ret;
     }
@@ -99,11 +99,11 @@ protected:
   {
     assert(L.size() == nA*nA);
     Rvec ret(nA*nA,0);
-    for (Uint j=0; j<nA; ++j)
-    for (Uint i=0; i<nA; ++i)
-    for (Uint k=0; k<nA; ++k) {
-      const Uint k1 = nA*j + k;
-      const Uint k2 = nA*i + k;
+    for (uint64_t j=0; j<nA; ++j)
+    for (uint64_t i=0; i<nA; ++i)
+    for (uint64_t k=0; k<nA; ++k) {
+      const uint64_t k1 = nA*j + k;
+      const uint64_t k2 = nA*i + k;
       ret[nA*j + i] += L[k1] * L[k2];
     }
     return ret;

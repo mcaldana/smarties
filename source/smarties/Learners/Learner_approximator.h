@@ -25,7 +25,7 @@ class Learner_approximator: public Learner
   bool createEncoder();
   void spawnTrainTasks();
 
-  virtual void Train(const MiniBatch&MB, const Uint wID,const Uint bID) const=0;
+  virtual void Train(const MiniBatch&MB, const uint64_t wID,const uint64_t bID) const=0;
 
   virtual void prepareCMALoss();
 

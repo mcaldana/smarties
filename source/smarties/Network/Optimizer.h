@@ -22,17 +22,17 @@ protected:
   const ExecutionInfo & distrib;
   const HyperParameters & settings;
   const MPI_Comm learnersComm = MPICommDup(distrib.learners_train_comm);
-  const Uint learn_size = MPICommSize(learnersComm);
-  const Uint learn_rank = MPICommRank(learnersComm);
-  const Uint populationSize = settings.ESpopSize;
-  const Uint nThreads = distrib.nThreads;
+  const uint64_t learn_size = MPICommSize(learnersComm);
+  const uint64_t learn_rank = MPICommRank(learnersComm);
+  const uint64_t populationSize = settings.ESpopSize;
+  const uint64_t nThreads = distrib.nThreads;
 
   const std::shared_ptr<Parameters> weights;
   const std::vector<std::shared_ptr<Parameters>> sampled_weights =
                                        allocManyParams(weights, populationSize);
   const std::shared_ptr<Parameters> target_weights = weights->allocateEmptyAlike();
 
-  Uint cntUpdateDelay = 0;
+  uint64_t cntUpdateDelay = 0;
   std::mutex samples_mutex;
 
   std::vector<MPI_Request> weightsMPIrequests = std::vector<MPI_Request>(populationSize, MPI_REQUEST_NULL);
@@ -45,7 +45,7 @@ public:
   bool bAnnealLearnRate = true;
   const Real eta_init = settings.learnrate;
   nnReal eta = eta_init;
-  const Uint batchSize = settings.batchSize;
+  const uint64_t batchSize = settings.batchSize;
   Real lambda = settings.nnLambda;
   const Real epsAnneal = settings.epsAnneal;
   const Real tgtUpdateAlpha = settings.targetDelay;
@@ -68,11 +68,11 @@ public:
   virtual void getHeaders(std::ostringstream&buff,const std::string nnName) = 0;
   virtual bool ready2UpdateWeights() = 0;
 
-  const Parameters * getWeights(const Sint weightsIndex)
+  const Parameters * getWeights(const int64_t weightsIndex)
   {
     if(weightsIndex == 0) return weights.get();
     if(weightsIndex <  0) return target_weights.get();
-    assert((Uint) weightsIndex < sampled_weights.size());
+    assert((uint64_t) weightsIndex < sampled_weights.size());
     assert(weightsMPIrequests.size() == sampled_weights.size());
     if(weightsMPIrequests[weightsIndex] == MPI_REQUEST_NULL)
       return sampled_weights[weightsIndex].get();

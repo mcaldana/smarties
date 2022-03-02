@@ -36,7 +36,7 @@ namespace smarties
 
 class ParameterBlob
 {
-  using dataInfo = std::pair<Uint, nnReal*>;
+  using dataInfo = std::pair<uint64_t, nnReal*>;
   const ExecutionInfo & distrib;
   const MPI_Comm comm = distrib.master_workers_comm;
   ReplayStats & stats;
@@ -53,11 +53,11 @@ public:
   ParameterBlob(const ExecutionInfo& D, ReplayStats& S, ReplayCounters& C)
     : distrib(D), stats(S), counters(C) {}
 
-  void add(const Uint size, nnReal * const data) {
+  void add(const uint64_t size, nnReal * const data) {
     dataList.emplace_back(std::make_pair(size, data));
   }
 
-  void recv(const Uint MDP_ID) const
+  void recv(const uint64_t MDP_ID) const
   {
     MPI(Recv, (void *) & counterMsg, sizeof(counterMsg), MPI_BYTE,
         0, 72726 + MDP_ID, comm, MPI_STATUS_IGNORE);
@@ -72,7 +72,7 @@ public:
     }
   }
 
-  void send(const Uint toRank, const Uint MDP_ID)
+  void send(const uint64_t toRank, const uint64_t MDP_ID)
   {
     counterMsg.nDataB4startup = counters.nGatheredB4Startup;
     counterMsg.nGradSteps = counters.nGradSteps.load();

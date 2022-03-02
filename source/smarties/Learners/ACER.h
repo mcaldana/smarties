@@ -17,21 +17,21 @@ namespace smarties
 class ACER : public Learner_approximator
 {
 protected:
-  const Uint nA = aInfo.dim();
+  const uint64_t nA = aInfo.dim();
   const Real explNoise = settings.explNoise;
   const Real acerTrickPow = 1.0 / std::sqrt(nA);
   //const Real acerTrickPow = 1. / nA;
-  static constexpr Uint nAexpectation = 5;
+  static constexpr uint64_t nAexpectation = 5;
   Approximator * encoder = nullptr;
   Approximator * actor = nullptr;
   Approximator * value = nullptr;
   Approximator * advtg = nullptr;
 
-  void Train(const MiniBatch& MB, const Uint wID, const Uint bID) const override;
+  void Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const override;
 
 public:
 
-  static Uint getnDimPolicy(const ActionInfo*const aI)
+  static uint64_t getnDimPolicy(const ActionInfo*const aI)
   {
     return 2*aI->dim();
   }

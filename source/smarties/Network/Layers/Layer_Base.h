@@ -16,19 +16,19 @@ namespace smarties
 
 class BaseLayer: public Layer
 {
-  const Uint nInputs, nNeurons, bRecurrent, nOut_simd;
+  const uint64_t nInputs, nNeurons, bRecurrent, nOut_simd;
   const std::unique_ptr<Function> func;
   std::vector<nnReal> initVals;
 
  public:
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override {
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override {
     nWeight.push_back(nOut_simd * (bRecurrent? nInputs + nNeurons : nInputs));
     nBiases.push_back(nNeurons);
   }
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override {
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override {
     sizes.push_back(nNeurons);
     bOutputs.push_back(bOutput);
     bInputs.push_back(bInput);
@@ -39,8 +39,8 @@ class BaseLayer: public Layer
     std::copy(init.begin(), init.end(), initVals.begin());
   }
 
-  BaseLayer(Uint _ID, Uint _nInputs, Uint _nNeurons, std::string funcType,
-            bool bRnn, bool bOut, Uint iLink) :
+  BaseLayer(uint64_t _ID, uint64_t _nInputs, uint64_t _nNeurons, std::string funcType,
+            bool bRnn, bool bOut, uint64_t iLink) :
             Layer(_ID, _nNeurons, bOut, false, iLink),
             nInputs(_nInputs), nNeurons(_nNeurons), bRecurrent(bRnn),
             nOut_simd(Utilities::roundUpSimd(_nNeurons)),
@@ -71,11 +71,11 @@ class BaseLayer: public Layer
     {
       const nnReal* const inputs = curr->Y(ID-link);
       const nnReal* const weight = para->W(ID);
-      for (Uint i = 0; i < nInputs; ++i)
+      for (uint64_t i = 0; i < nInputs; ++i)
       {
         const nnReal* const W = weight + nOut_simd*i;
         #pragma omp simd aligned(suminp, inputs, W : VEC_WIDTH)
-        for (Uint o = 0; o < nNeurons; ++o)
+        for (uint64_t o = 0; o < nNeurons; ++o)
           suminp[o] += inputs[i] * W[o];
       }
     }
@@ -83,11 +83,11 @@ class BaseLayer: public Layer
     {
       const nnReal* const inputs = prev->Y(ID);
       const nnReal* const weight = para->W(ID) +nOut_simd*nInputs;
-      for (Uint i = 0; i < nNeurons; ++i)
+      for (uint64_t i = 0; i < nNeurons; ++i)
       {
         const nnReal* const W = weight + nOut_simd*i;
         #pragma omp simd aligned(suminp, inputs, W : VEC_WIDTH)
-        for (Uint o = 0; o < nNeurons; ++o)
+        for (uint64_t o = 0; o < nNeurons; ++o)
           suminp[o] += inputs[i] * W[o];
       }
     }
@@ -104,7 +104,7 @@ class BaseLayer: public Layer
       nnReal* const deltas = curr->E(ID);
       const nnReal* const suminp = curr->X(ID);
       const nnReal* const outval = curr->Y(ID);
-      for(Uint o=0; o<nNeurons; ++o)
+      for(uint64_t o=0; o<nNeurons; ++o)
         deltas[o] *= func->evalDiff(suminp[o], outval[o]);
     }
 
@@ -120,22 +120,22 @@ class BaseLayer: public Layer
     std::uniform_real_distribution<nnReal> dis(-init, init);
     {
       nnReal* const biases = W->B(ID);
-      for(Uint o=0; o<nNeurons; ++o)
+      for(uint64_t o=0; o<nNeurons; ++o)
         if(initVals.size() != nNeurons) biases[o] = 0;
         else biases[o] = func->inverse(initVals[o]);
     }
     {
       nnReal* const weight = W->W(ID);
-      for(Uint i=0; i<nInputs;  ++i)
-        for(Uint o=0; o<nNeurons; ++o)
+      for(uint64_t i=0; i<nInputs;  ++i)
+        for(uint64_t o=0; o<nNeurons; ++o)
           weight[o +nOut_simd*i] = dis(G);
       //if(std::fabs(fac-1)<nnEPS) orthogonalize(para, gen, init);
     }
     if(bRecurrent)
     {
       nnReal* const weight = W->W(ID) +nOut_simd*nInputs;
-      for(Uint i=0; i<nNeurons;  ++i)
-        for(Uint o=0; o<nNeurons; ++o)
+      for(uint64_t i=0; i<nNeurons;  ++i)
+        for(uint64_t o=0; o<nNeurons; ++o)
           weight[o +nOut_simd*i] = dis(G);
     }
   }
@@ -145,10 +145,10 @@ class BaseLayer: public Layer
   {
     const nnReal* const bias = para->B(ID);
     const nnReal* const weight = para->W(ID);
-    for(Uint i=0; i<nInputs + bRecurrent*nNeurons; ++i)
-      for(Uint o=0; o<nNeurons; ++o)
+    for(uint64_t i=0; i<nInputs + bRecurrent*nNeurons; ++i)
+      for(uint64_t o=0; o<nNeurons; ++o)
         *(tmp++) = (float) weight[o + nOut_simd * i];
-    for (Uint n=0; n<nNeurons; ++n) *(tmp++) = (float) bias[n];
+    for (uint64_t n=0; n<nNeurons; ++n) *(tmp++) = (float) bias[n];
     return nNeurons * (nInputs + bRecurrent*nNeurons + 1);
   }
   size_t restart(const Parameters * const para,
@@ -157,11 +157,11 @@ class BaseLayer: public Layer
     nnReal* const bias = para->B(ID);
     nnReal* const weight = para->W(ID);
     // restart weights and recurrent weights if any
-    for(Uint i=0; i<nInputs + bRecurrent*nNeurons; ++i)
-      for(Uint o=0; o<nNeurons; ++o)
+    for(uint64_t i=0; i<nInputs + bRecurrent*nNeurons; ++i)
+      for(uint64_t o=0; o<nNeurons; ++o)
         weight[o + nOut_simd * i] = (nnReal) *(tmp++);
     // restart bias
-    for (Uint n=0; n<nNeurons; ++n) bias[n] = (nnReal) *(tmp++);
+    for (uint64_t n=0; n<nNeurons; ++n) bias[n] = (nnReal) *(tmp++);
     return nNeurons * (nInputs + bRecurrent*nNeurons + 1);
   }
 };

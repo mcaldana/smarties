@@ -169,36 +169,36 @@ int ExecutionInfo::parse()
   return 0;
 }
 
-inline Uint notRoundedSplitting(const Uint nSplitters,
-                                const Uint nToSplit,
-                                const Uint splitterRank)
+inline uint64_t notRoundedSplitting(const uint64_t nSplitters,
+                                const uint64_t nToSplit,
+                                const uint64_t splitterRank)
 {
-  const Uint nPerSplitter = std::ceil( nToSplit / (Real) nSplitters );
-  const Uint splitBeg = std::min( splitterRank    * nPerSplitter, nToSplit);
-  const Uint splitEnd = std::min((splitterRank+1) * nPerSplitter, nToSplit);
+  const uint64_t nPerSplitter = std::ceil( nToSplit / (Real) nSplitters );
+  const uint64_t splitBeg = std::min( splitterRank    * nPerSplitter, nToSplit);
+  const uint64_t splitEnd = std::min((splitterRank+1) * nPerSplitter, nToSplit);
   return splitEnd - splitBeg;
 }
 
-inline Uint indxStripedMPISplitting(const Uint nSplitters,
-                                    const Uint nToSplit,
-                                    const Uint indexedRank)
+inline uint64_t indxStripedMPISplitting(const uint64_t nSplitters,
+                                    const uint64_t nToSplit,
+                                    const uint64_t indexedRank)
 {
   assert(indexedRank < nSplitters + nToSplit);
-  for(Uint i=0, countIndex=0; i<nSplitters; ++i) {
-    const Uint nInGroup = notRoundedSplitting(nSplitters, nToSplit, i);
+  for(uint64_t i=0, countIndex=0; i<nSplitters; ++i) {
+    const uint64_t nInGroup = notRoundedSplitting(nSplitters, nToSplit, i);
     countIndex += nInGroup+1; // nInGroup resources + 1 handler
     if(indexedRank < countIndex) return i;
   }
   assert(false && "logic error"); return 0;
 }
 
-inline Uint rankStripedMPISplitting(const Uint nSplitters,
-                                    const Uint nToSplit,
-                                    const Uint indexedRank)
+inline uint64_t rankStripedMPISplitting(const uint64_t nSplitters,
+                                    const uint64_t nToSplit,
+                                    const uint64_t indexedRank)
 {
   assert(indexedRank < nSplitters + nToSplit);
-  for(Uint i=0, countIndex=0; i<nSplitters; ++i) {
-    const Uint nInGroup = notRoundedSplitting(nSplitters, nToSplit, i);
+  for(uint64_t i=0, countIndex=0; i<nSplitters; ++i) {
+    const uint64_t nInGroup = notRoundedSplitting(nSplitters, nToSplit, i);
     if(indexedRank < countIndex + nInGroup+1)
       return indexedRank - countIndex;
     countIndex += nInGroup+1; // nInGroup resources + 1 handler
@@ -221,7 +221,7 @@ void ExecutionInfo::figureOutWorkersPattern()
   }
   if(not forkableApplication &&     bThereAreWorkerProcesses) {
     // then each worker rank runs its own environment
-    workerProcessesPerEnv = std::max(workerProcessesPerEnv, (Uint) 1);
+    workerProcessesPerEnv = std::max(workerProcessesPerEnv, (uint64_t) 1);
     if(nWorkers % workerProcessesPerEnv not_eq 0)
       die("Mismatch between worker processes and number of ranks requested to run env application.");
     nEnvironments = nWorkers;
@@ -272,7 +272,7 @@ void ExecutionInfo::figureOutWorkersPattern()
       // then masters talk to workers, and workers own environments
       // what is the size of the mpi communicator where we have workers?
       bIsMaster = rankStripedMPISplitting(nMasters, nWorkers, world_rank) == 0;
-      Uint commWorkID = indxStripedMPISplitting(nMasters, nWorkers, world_rank);
+      uint64_t commWorkID = indxStripedMPISplitting(nMasters, nWorkers, world_rank);
 
       //if(fakeMastersRanks) { // overwrite splitting if we have only fake masters
       //  bIsMaster = world_rank < nMasters;
@@ -299,15 +299,15 @@ void ExecutionInfo::figureOutWorkersPattern()
       }
       else // is worker
       {
-        const Uint totalWorkRank = MPICommRank(learners_train_comm);
+        const uint64_t totalWorkRank = MPICommRank(learners_train_comm);
         assert(MPICommSize(learners_train_comm) == nWorkers);
         MPI_Comm_free(& learners_train_comm);
         learners_train_comm = MPI_COMM_NULL;
         nOwnedEnvironments = notRoundedSplitting(nWorkers,
                                                  nEnvironments,
                                                  totalWorkRank);
-        const Uint innerWorkRank = MPICommRank(master_workers_comm);
-        const Uint innerWorkSize = MPICommSize(master_workers_comm);
+        const uint64_t innerWorkRank = MPICommRank(master_workers_comm);
+        const uint64_t innerWorkSize = MPICommSize(master_workers_comm);
         assert(nOwnedEnvironments==1);
         assert(innerWorkRank>0);
         assert(innerWorkSize>1);
@@ -360,8 +360,8 @@ void ExecutionInfo::figureOutWorkersPattern()
     // all are workers implies all have data:
     workerless_masters_comm = MPI_COMM_NULL;
 
-    const Uint totalWorkRank = MPICommRank(learners_train_comm);
-    const Uint totalWorkSize = MPICommSize(learners_train_comm);
+    const uint64_t totalWorkRank = MPICommRank(learners_train_comm);
+    const uint64_t totalWorkSize = MPICommSize(learners_train_comm);
     if( (totalWorkSize-1) % workerProcessesPerEnv not_eq 0) {
       _die("Number of worker ranks per master (%u) must be a multiple of "
       "the nr. of ranks that the environment app requires to run (%u).\n",

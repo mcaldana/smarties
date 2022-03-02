@@ -27,20 +27,20 @@ struct Approximator
   //when this flag is true, specification of network properties is disabled:
   bool bCreatedNetwork = false;
 
-  void setNumberOfAddedSamples(const Uint nSamples = 0);
+  void setNumberOfAddedSamples(const uint64_t nSamples = 0);
   //specify type (and size) of auxiliary input
-  void setAddedInput(const ADDED_INPUT type, Sint size = -1);
+  void setAddedInput(const ADDED_INPUT type, int64_t size = -1);
   // specify whether we are using target networks
-  void setUseTargetNetworks(const Sint targetNetworkSampleID = -1,
+  void setUseTargetNetworks(const int64_t targetNetworkSampleID = -1,
                             const bool bTargetNetUsesTargetWeights = true);
 
   void setBlockGradsToPreprocessing();
 
-  void buildFromSettings(const Uint outputSize) {
-    buildFromSettings( std::vector<Uint>(1, outputSize) );
+  void buildFromSettings(const uint64_t outputSize) {
+    buildFromSettings( std::vector<uint64_t>(1, outputSize) );
   }
-  void buildFromSettings(const std::vector<Uint> outputSizes);
-  void buildPreprocessing(const std::vector<Uint> outputSizes);
+  void buildFromSettings(const std::vector<uint64_t> outputSizes);
+  void buildPreprocessing(const std::vector<uint64_t> outputSizes);
   Builder& getBuilder()
   {
     if (build) return * build.get();
@@ -52,17 +52,17 @@ struct Approximator
 
   void initializeNetwork();
 
-  Uint nOutputs() const {
+  uint64_t nOutputs() const {
     if (net == nullptr) return 0;
     else return net->getnOutputs();
   }
-  Uint nLayers() const {
+  uint64_t nLayers() const {
     if (net not_eq nullptr) return net->nLayers;
     else if (build not_eq nullptr) return build->layers.size();
     else return 0;
   }
-  void setNgradSteps(const Uint iter) const { opt->nStep = iter; }
-  void updateGradStats(const std::string& base, const Uint iter) const
+  void setNgradSteps(const uint64_t iter) const { opt->nStep = iter; }
+  void updateGradStats(const std::string& base, const uint64_t iter) const
   {
     gradStats->reduce_stats(base+"_"+name, iter);
   }
@@ -73,9 +73,9 @@ struct Approximator
                const Approximator* const auxInputNet_ = nullptr);
   ~Approximator();
 
-  void load(const MiniBatch& B, const Uint batchID, const Sint wghtID) const
+  void load(const MiniBatch& B, const uint64_t batchID, const int64_t wghtID) const
   {
-    const Uint thrID = omp_get_thread_num();
+    const uint64_t thrID = omp_get_thread_num();
     // ensure we allocated enough workspaces:
     assert(contexts.size()>thrID && threadsPerBatch.size()>batchID);
     ThreadContext&C = * contexts[thrID].get();
@@ -86,7 +86,7 @@ struct Approximator
     //if(auxInputNet) auxInputNet->load(B, batchID, wghtID);
   }
 
-  void load(const MiniBatch& B, const Agent& agent, const Sint wghtID=0) const
+  void load(const MiniBatch& B, const Agent& agent, const int64_t wghtID=0) const
   {
     assert(agentsContexts.size() > agent.ID);
     AgentContext & C = * agentsContexts[agent.ID].get();
@@ -98,14 +98,14 @@ struct Approximator
   template< typename contextid_t, typename val_t>
   void setAddedInput(const std::vector<val_t>& addedInput,
                      const contextid_t& contextID,
-                     const Uint t, Sint sampID = 0) const
+                     const uint64_t t, int64_t sampID = 0) const
   {
     getContext(contextID).setAddedInput(addedInput, t, sampID);
   }
   template< typename contextid_t>
   void setAddedInputType(const ADDED_INPUT& type,
                          const contextid_t& contextID,
-                         const Uint t, Sint sampID = 0) const
+                         const uint64_t t, int64_t sampID = 0) const
   {
     getContext(contextID).setAddedInputType(type, sampID);
   }
@@ -116,15 +116,15 @@ struct Approximator
   // or a previously loaded agent.
   template< typename contextid_t >
   Rvec forward(const contextid_t& contextID,
-               const Uint t, Sint sampID=0, const bool overwrite=false) const
+               const uint64_t t, int64_t sampID=0, const bool overwrite=false) const
   {
     auto& C = getContext(contextID);
-    if(sampID > (Sint) C.nAddedSamples) { sampID = 0; }
+    if(sampID > (int64_t) C.nAddedSamples) { sampID = 0; }
     if(overwrite)
        C.activation(t, sampID)->written = false;
     if(C.activation(t, sampID)->written)
       return C.activation(t, sampID)->getOutput();
-    const Uint ind = C.mapTime2Ind(t);
+    const uint64_t ind = C.mapTime2Ind(t);
 
     // Compute previous outputs if needed by recurrencies. LIMITATION:
     // What should we do for target net / additional samples?
@@ -153,7 +153,7 @@ struct Approximator
     {
       assert(auxInputNet not_eq nullptr);
       Rvec addedinp = auxInputNet->forward(contextID, t, sampID);
-      assert( (Sint) addedinp.size() >= m_auxInputSize);
+      assert( (int64_t) addedinp.size() >= m_auxInputSize);
       addedinp.resize(m_auxInputSize);
       INP.insert(INP.end(), addedinp.begin(), addedinp.end());
     }
@@ -175,7 +175,7 @@ struct Approximator
   // forward target network
   template< typename contextid_t >
   Rvec forward_tgt(const contextid_t& contextID,
-                   const Uint t, const bool overwrite=false) const
+                   const uint64_t t, const bool overwrite=false) const
   {
     return forward(contextID, t, -1, overwrite);
   }
@@ -188,14 +188,14 @@ struct Approximator
   }
 
   void setGradient(const Rvec& gradient,
-                   const Uint  batchID,
-                   const Uint  t, Sint sampID = 0) const
+                   const uint64_t  batchID,
+                   const uint64_t  t, int64_t sampID = 0) const
   {
     ThreadContext& C = getContext(batchID);
-    if(sampID > (Sint) C.nAddedSamples) { sampID = 0; }
-    //for(Uint i=0; i<grad.size(); ++i) grad[i] *= PERW;
+    if(sampID > (int64_t) C.nAddedSamples) { sampID = 0; }
+    //for(uint64_t i=0; i<grad.size(); ++i) grad[i] *= PERW;
     gradStats->track_vector(gradient, C.threadID);
-    const Sint ind = C.mapTime2Ind(t);
+    const int64_t ind = C.mapTime2Ind(t);
     //ind+1 because we use c-style for loops in other places:
     C.endBackPropStep(sampID) = std::max(C.endBackPropStep(sampID), ind+1);
     assert( C.activation(t, sampID)->written );
@@ -203,10 +203,10 @@ struct Approximator
     else C.activation(t, sampID)->addOutputDelta(gradient);
   }
 
-  Real& ESloss(const Uint ESweightID = 0) { return losses[ESweightID]; }
+  Real& ESloss(const uint64_t ESweightID = 0) { return losses[ESweightID]; }
   Rvec oneStepBackProp(const Rvec& gradient,
-                       const Uint  batchID,
-                       const Uint  t, Sint sampID) const
+                       const uint64_t  batchID,
+                       const uint64_t  t, int64_t sampID) const
   {
     assert(auxInputNet && "improperly set up the aux input net");
     assert(auxInputAttachLayer >= 0 && "improperly set up the aux input net");
@@ -215,10 +215,10 @@ struct Approximator
       return Rvec(m_auxInputSize, 0);
     }
     ThreadContext& C = getContext(batchID);
-    if(sampID > (Sint) C.nAddedSamples) { sampID = 0; }
+    if(sampID > (int64_t) C.nAddedSamples) { sampID = 0; }
     const MDPdescriptor & MDP = replay->MDP;
     const Parameters* const W = opt->getWeights(C.usedWeightID(sampID));
-    const Uint inputSize = preprocessing? preprocessing->nOutputs()
+    const uint64_t inputSize = preprocessing? preprocessing->nOutputs()
                          : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
     Activation* const A = C.activation(t, sampID);
     assert(C.activation(t, sampID)->written == true);
@@ -229,7 +229,7 @@ struct Approximator
     else return Rvec(& ret[inputSize], & ret[inputSize + m_auxInputSize]);
   }
 
-  Rvec getStepBackProp(const Uint batchID, const Uint t, Sint sampID) const
+  Rvec getStepBackProp(const uint64_t batchID, const uint64_t t, int64_t sampID) const
   {
     assert(auxInputNet && "improperly set up the aux input net");
     assert(auxInputAttachLayer >= 0 && "improperly set up the aux input net");
@@ -238,9 +238,9 @@ struct Approximator
       return Rvec(m_auxInputSize, 0);
     }
     ThreadContext& C = getContext(batchID);
-    if(sampID > (Sint) C.nAddedSamples) { sampID = 0; }
+    if(sampID > (int64_t) C.nAddedSamples) { sampID = 0; }
     const MDPdescriptor & MDP = replay->MDP;
-    const Uint inputSize = preprocessing? preprocessing->nOutputs()
+    const uint64_t inputSize = preprocessing? preprocessing->nOutputs()
                          : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
     assert(C.activation(t, sampID)->written == true);
     Rvec ret = C.activation(t, sampID)->getInputGradient(auxInputAttachLayer);
@@ -250,7 +250,7 @@ struct Approximator
     else return Rvec(& ret[inputSize], & ret[inputSize + m_auxInputSize]);
   }
 
-  void backProp(const Uint batchID) const
+  void backProp(const uint64_t batchID) const
   {
     ThreadContext& C = getContext(batchID);
 
@@ -264,14 +264,14 @@ struct Approximator
       const auto& timeSeriesBase = activations[0];
 
       //loop over all the network samples, each may need different BPTT window
-      for(Uint j = 0; j < activations.size(); ++j)
+      for(uint64_t j = 0; j < activations.size(); ++j)
       {
-        const Uint samp = activations.size() - 1 - j;
-        const Sint last_error = C.endBackPropStep(samp);
+        const uint64_t samp = activations.size() - 1 - j;
+        const int64_t last_error = C.endBackPropStep(samp);
         if(last_error < 0) continue;
 
         const auto& timeSeriesSamp = activations[samp];
-        for (Sint i=0; i<last_error; ++i) assert(timeSeriesSamp[i]->written);
+        for (int64_t i=0; i<last_error; ++i) assert(timeSeriesSamp[i]->written);
 
         const Parameters* const W = opt->getWeights(C.usedWeightID(samp));
         net->backProp(timeSeriesSamp, timeSeriesBase, last_error,
@@ -279,9 +279,9 @@ struct Approximator
 
         if(preprocessing and not m_blockInpGrad)
         {
-          for(Sint k=0; k<last_error; ++k)
+          for(int64_t k=0; k<last_error; ++k)
           {
-            const Uint t = C.mapInd2Time(k);
+            const uint64_t t = C.mapInd2Time(k);
             // assume that preprocessing is layer 0:
             Rvec inputGrad = C.activation(t, samp)->getInputGradient(0);
             // we might have added inputs, therefore trim those:
@@ -300,14 +300,14 @@ struct Approximator
   {
     #ifndef NDEBUG
     for(const auto& C : contexts)
-      for(const Sint todoBackProp : C->lastGradTstep)
+      for(const int64_t todoBackProp : C->lastGradTstep)
         assert(todoBackProp<0 && "arrived into prepareUpdate() before doing backprop on all workspaces");
     #endif
 
     if(nAddedGradients==0) die("No-gradient update. Revise hyperparameters.");
 
     if(preprocessing and not m_blockInpGrad)
-      for(Uint i=0; i<ESpopSize; ++i) preprocessing->losses[i] += losses[i];
+      for(uint64_t i=0; i<ESpopSize; ++i) preprocessing->losses[i] += losses[i];
 
     opt->prepare_update(losses);
     losses = Rvec(ESpopSize, 0);
@@ -348,18 +348,18 @@ private:
   const HyperParameters & settings;
   const ExecutionInfo & distrib;
   std::string name;
-  const Uint   nAgents =  distrib.nAgents,    nThreads =  distrib.nThreads;
-  const Uint ESpopSize = settings.ESpopSize, batchSize = settings.batchSize;
+  const uint64_t   nAgents =  distrib.nAgents,    nThreads =  distrib.nThreads;
+  const uint64_t ESpopSize = settings.ESpopSize, batchSize = settings.batchSize;
   const MemoryBuffer* const replay;
   const Approximator* const preprocessing;
   const Approximator* const auxInputNet;
   const ActionInfo& aI = replay->aI;
-  Sint auxInputAttachLayer = -1;
-  Sint m_auxInputSize = -1;
-  Uint m_numberOfAddedSamples = 0;
+  int64_t auxInputAttachLayer = -1;
+  int64_t m_auxInputSize = -1;
+  uint64_t m_numberOfAddedSamples = 0;
   bool m_UseTargetNetwork = false;
   bool m_bTargetNetUsesTargetWeights = true;
-  Sint m_targetNetworkSampleID = -1;
+  int64_t m_targetNetworkSampleID = -1;
 
   // Whether to backprop gradients in the input network.
   // Some papers do not propagate policy gradients towards encoding layers
@@ -369,7 +369,7 @@ private:
   std::shared_ptr<Optimizer> opt;
   std::unique_ptr<Builder> build;
 
-  mutable std::vector<Uint> threadsPerBatch = std::vector<Uint>(batchSize, -1);
+  mutable std::vector<uint64_t> threadsPerBatch = std::vector<uint64_t>(batchSize, -1);
   std::vector<std::unique_ptr<ThreadContext>> contexts;
   std::vector<std::unique_ptr< AgentContext>> agentsContexts;
   StatsTracker* gradStats = nullptr;
@@ -378,7 +378,7 @@ private:
   // Each weight vector sample:
   mutable Rvec losses = Rvec(ESpopSize, 0);
 
-  ThreadContext& getContext(const Uint batchID) const
+  ThreadContext& getContext(const uint64_t batchID) const
   {
     assert(threadsPerBatch.size() > batchID);
     return * contexts[ threadsPerBatch[batchID] ].get();
@@ -390,8 +390,8 @@ private:
   }
 
 public:
-  mutable std::atomic<Uint> nAddedGradients{0};
-  Uint reducedGradients=0;
+  mutable std::atomic<uint64_t> nAddedGradients{0};
+  uint64_t reducedGradients=0;
 };
 
 } // end namespace smarties

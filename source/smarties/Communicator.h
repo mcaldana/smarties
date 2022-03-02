@@ -147,7 +147,7 @@ public:
 
   VISIBLE const std::vector<double> getOptimizationParameters(int agentID = 0)
   {
-    assert(ENV.descriptors[agentID]->dimState == 0 &&
+    assert(m_Environment.descriptors[agentID]->dimState == 0 &&
            "optimization interface only defined for stateless problems");
     _sendState(agentID, INIT, std::vector<double>(0), 0); // fake initial state
     return recvAction(agentID);
@@ -155,7 +155,7 @@ public:
 
   VISIBLE void setOptimizationEvaluation(const Real R, const int agentID = 0)
   {
-    assert(ENV.descriptors[agentID]->dimState == 0 &&
+    assert(m_Environment.descriptors[agentID]->dimState == 0 &&
            "optimization interface only defined for stateless problems");
     _sendState(agentID, TERM, std::vector<double>(0), R); // send objective eval
   }
@@ -180,37 +180,35 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
 protected:
-  bool bEnvDistributedAgents = false;
+  bool m_bEnvDistributedAgents = false;
 
-  Environment ENV;
-  std::vector<std::unique_ptr<Agent>>& agents = ENV.agents;
-  std::vector<std::unique_ptr<COMM_buffer>> BUFF;
+  Environment m_Environment;
+  std::vector<std::unique_ptr<Agent>>& agents = m_Environment.agents;
+  std::vector<std::unique_ptr<COMM_buffer>> m_CommBuffers;
 
   struct {
     int server = -1;
     std::vector<int> clients;
-  } SOCK;
+  } m_Sockets;
 
   void synchronizeEnvironments();
   void initOneCommunicationBuffer();
   //random number generation:
-  std::mt19937 gen;
+  std::mt19937 m_RandomGen;
   //internal counters & flags
-  bool bTrain = true;
-  bool bTrainIsOver = false;
-  long nRequestedEnvTimeSteps = -1;
-  Uint globalTstepCounter = 0;
+  bool m_bTrain = true;
+  bool m_bTrainIsOver = false;
+  uint64_t m_globalTstepCounter = 0;
+
+  //access to smarties' internals, available only if app is linked into exec
+  friend class Worker;
+  Worker * const m_Worker = nullptr;
 
   //called by app to interact with smarties:
   VISIBLE void _sendState(const int agentID,
                           const episodeStatus status,
                           const std::vector<double>& state,
                           const double reward);
-
-  //access to smarties' internals, available only if app is linked into exec
-  friend class Worker;
-
-  Worker * const worker = nullptr;
 
   Communicator(Worker* const, std::mt19937&, bool);
 };
@@ -227,7 +225,7 @@ struct COMM_buffer
     dataActionBuf(malloc(sizeActionMsg)) { }
 
   ~COMM_buffer() {
-    assert(dataStateBuf not_eq nullptr && dataActionBuf not_eq nullptr);
+    assert(dataStateBuf && dataActionBuf);
     free(dataActionBuf);
     free(dataStateBuf);
   }

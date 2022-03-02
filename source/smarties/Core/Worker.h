@@ -51,27 +51,27 @@ protected:
 
   std::vector<std::unique_ptr<Learner>> learners;
 
-  Environment& ENV;
+  Environment& m_Environment;
   const std::vector<std::unique_ptr<Agent>>& agents;
 
-  const Uint nCallingEnvs = distrib.nOwnedEnvironments;
+  const uint64_t nCallingEnvs = distrib.nOwnedEnvironments;
   const int bTrain = distrib.bTrain;
 
   // small utility functions:
-  Uint getLearnerID(const Uint agentIDlocal) const;
+  uint64_t getLearnerID(const uint64_t agentIDlocal) const;
   bool learnersBlockingDataAcquisition() const;
 
   void answerStateActionCaller(const int bufferID);
 
-  void stepWorkerToMaster(const Uint bufferID) const;
+  void stepWorkerToMaster(const uint64_t bufferID) const;
 
-  void answerStateAction(const Uint bufferID) const;
+  void answerStateAction(const uint64_t bufferID) const;
   void answerStateAction(Agent& agent) const;
 
   void sendStateRecvAction(const COMM_buffer& BUF) const;
 
-  int getSocketID(const Uint worker) const;
-  const COMM_buffer& getCommBuffer(const Uint worker) const;
+  int getSocketID(const uint64_t worker) const;
+  const COMM_buffer& getCommBuffer(const uint64_t worker) const;
 };
 
 } // end namespace smarties

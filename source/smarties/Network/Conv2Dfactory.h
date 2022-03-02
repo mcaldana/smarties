@@ -20,7 +20,7 @@ template
 >
 void makeConv2D(Builder & build,
                 const bool bOutput = false,
-                const Uint iLink = 1)
+                const uint64_t iLink = 1)
 {
   assert(KnC*OpX*OpY > 0);
   #ifndef USE_OMPSIMD_BLAS
@@ -42,7 +42,7 @@ template
 >
 bool ifMatchAddConv2D(const Conv2D_Descriptor & DESCR,
                       std::vector<std::unique_ptr<Layer>> & layers,
-                      const bool bOutput = false, const Uint iLink = 1)
+                      const bool bOutput = false, const uint64_t iLink = 1)
 {
   bool sameInp = DESCR.inpFeatures==InC && DESCR.inpY==InX && DESCR.inpX==InY;
   bool sameOut = DESCR.outFeatures==KnC && DESCR.outY==OpY && DESCR.outX==OpX;

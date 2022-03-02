@@ -26,9 +26,9 @@ void PPO<Policy_t, Action_t>::updatePenalizationCoef()
 
 template<typename Policy_t, typename Action_t>
 void PPO<Policy_t, Action_t>::
-Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
   if(thrID==0)  profiler->start("FWD");
 
   const Rvec pVec = actor->forward(bID, t); // network compute

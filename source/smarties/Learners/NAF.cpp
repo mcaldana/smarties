@@ -24,9 +24,9 @@ namespace smarties
 {
 
 static inline Param_advantage prepare_advantage(const Rvec& O,
-  const ActionInfo& aI, const std::vector<Uint>& net_inds)
+  const ActionInfo& aI, const std::vector<uint64_t>& net_inds)
 {
-  return Param_advantage(std::vector<Uint>{net_inds[1], net_inds[2]}, aI, O);
+  return Param_advantage(std::vector<uint64_t>{net_inds[1], net_inds[2]}, aI, O);
 }
 
 NAF::NAF(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
@@ -44,7 +44,7 @@ NAF::NAF(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
   }
 
   networks[0]->setUseTargetNetworks();
-  const Uint nOutp = 1 + aInfo.dim() + Param_advantage::compute_nL(aInfo);
+  const uint64_t nOutp = 1 + aInfo.dim() + Param_advantage::compute_nL(aInfo);
   assert(nOutp == net_outputs[0] + net_outputs[1] + net_outputs[2]);
   networks[0]->buildFromSettings(nOutp);
   Rvec stdParam = Continuous_policy::initial_Stdev(aInfo, settings.explNoise);
@@ -130,9 +130,9 @@ void NAF::setupTasks(TaskQueue& tasks)
   tasks.add(stepComplete);
 }
 
-void NAF::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
+void NAF::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const
 {
-  const Uint t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
+  const uint64_t t = MB.sampledTstep(bID), thrID = omp_get_thread_num();
 
   if(thrID==0) profiler->start("FWD");
   const Rvec output = networks[0]->forward(bID, t);
@@ -166,11 +166,11 @@ void NAF::Train(const MiniBatch& MB, const Uint wID, const Uint bID) const
   ADV.grad(MB.action(bID,t), error, grad);
   if(CmaxRet>1 && beta<1) { // then ReFER
     const Rvec penG = POL.KLDivGradient(MB.mu(bID,t), -1);
-    for(Uint i=0; i<nA; ++i)
+    for(uint64_t i=0; i<nA; ++i)
       grad[net_indices[2]+i] = beta*grad[net_indices[2]+i] + (1-beta)*penG[i];
   }
   const Rvec fixGrad = POL.fixExplorationGrad(settings.explNoise);
-  for(Uint i=0; i<nA; ++i) grad[net_indices[3]+i] = fixGrad[nA+i];
+  for(uint64_t i=0; i<nA; ++i) grad[net_indices[3]+i] = fixGrad[nA+i];
 
   MB.setMseDklImpw(bID, t, error, DKL, RHO, CmaxRet, CinvRet);
   MB.setValues(bID, t, output[net_indices[0]], Qs);

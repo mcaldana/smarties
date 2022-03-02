@@ -21,16 +21,16 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   // then we send them along. Idea is that simulation ranks will do nothing on
   // recv. Master ranks will first receive info from simulation, then pass it
   // along to worker-less masters.
-  sendRecvFunc(&dimState, 1 * sizeof(Uint) );
+  sendRecvFunc(&dimState, 1 * sizeof(uint64_t) );
   if(dimState == 0) warn("Stateless RL");
 
-  sendRecvFunc(&dimAction,        1 * sizeof(Uint) );
+  sendRecvFunc(&dimAction,        1 * sizeof(uint64_t) );
   if(dimAction == 0)
     die("Application did not set up dimensionality of action vector.");
 
   {
-    Uint sizeOfDiscreteActionsOptionsVec = discreteActionValues.size();
-    sendRecvFunc(&sizeOfDiscreteActionsOptionsVec, 1 * sizeof(Uint) );
+    uint64_t sizeOfDiscreteActionsOptionsVec = discreteActionValues.size();
+    sendRecvFunc(&sizeOfDiscreteActionsOptionsVec, 1 * sizeof(uint64_t) );
     discreteActionValues.resize(sizeOfDiscreteActionsOptionsVec);
   }
 
@@ -38,7 +38,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   // STATE SPACE
   //////////////////////////////////////////////////////////////////////////////
 
-  sendRecvFunc(&nAppendedObs,            1 * sizeof(Uint) );
+  sendRecvFunc(&nAppendedObs,            1 * sizeof(uint64_t) );
   sendRecvFunc(&isPartiallyObservable,   1 * sizeof(bool) );
   sendRecvVectorFunc(sendRecvFunc, conv2dDescriptors);
 
@@ -50,7 +50,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
     die("Application error in setup of bStateVarObserved.");
 
   dimStateObserved = 0;
-  for(Uint i=0; i<dimState; ++i) if(bStateVarObserved[i]) dimStateObserved++;
+  for(uint64_t i=0; i<dimState; ++i) if(bStateVarObserved[i]) dimStateObserved++;
   if(world_rank == 0) {
    printf("SETUP: State vector has %u components, %u of which are observed. "
           "Action vector has %u %s-valued components.\n", (unsigned) dimState,
@@ -75,7 +75,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
     die("Application error in setup of stateStdDev.");
 
   stateScale.resize(dimStateObserved);
-  for(Uint i=0; i<dimStateObserved; ++i) {
+  for(uint64_t i=0; i<dimStateObserved; ++i) {
     if( stateStdDev[i] < std::numeric_limits<Real>::epsilon() )
       _die("Invalid value in scaling of state component %u.", i);
     stateScale[i] = 1/stateStdDev[i];
@@ -110,7 +110,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
     if( lowerActionValue.size() not_eq (size_t) dimAction)
       die("Application error in setup of lowerActionValue.");
 
-    for (Uint i=0; i<dimAction; ++i) {
+    for (uint64_t i=0; i<dimAction; ++i) {
       const auto L = lowerActionValue[i], U = upperActionValue[i];
       lowerActionValue[i] = std::min(L, U);
       upperActionValue[i] = std::max(L, U);
@@ -118,7 +118,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
 
     if(world_rank==0) {
       printf("Action vector components :");
-      for (Uint i=0; i<dimAction; ++i) {
+      for (uint64_t i=0; i<dimAction; ++i) {
         printf(" [ %u : %s to (%.1f:%.1f) ]", (unsigned) i,
           bActionSpaceBounded[i] ? "bound" : "scaled",
           lowerActionValue[i], upperActionValue[i]);
@@ -146,9 +146,9 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
     }
     if(world_rank==0) printf("\n");
 
-    discreteActionShifts = std::vector<Uint>(dimAction);
+    discreteActionShifts = std::vector<uint64_t>(dimAction);
     discreteActionShifts[0] = 1;
-    for (Uint i=1; i < dimAction; ++i)
+    for (uint64_t i=1; i < dimAction; ++i)
       discreteActionShifts[i] = discreteActionShifts[i-1] *
                                 discreteActionValues[i-1];
 

@@ -24,11 +24,11 @@ namespace smarties
 Builder::Builder(const HyperParameters& S, const ExecutionInfo& D)
   : distrib(D), settings(S) { }
 
-void Builder::addInput(const Uint size)
+void Builder::addInput(const uint64_t size)
 {
   if(size==0) die("Requested an empty input layer");
   if(bBuilt) die("Cannot build the network multiple times");
-  const Uint ID = layers.size();
+  const uint64_t ID = layers.size();
   layers.emplace_back(
     std::make_unique<InputLayer>(size, ID)
   );
@@ -37,7 +37,7 @@ void Builder::addInput(const Uint size)
   // if this is not first layer, glue this layer and previous together:
   if(nInputs > 0) {
     assert(ID>0);
-    const Uint twoLayersSize = layers[ID-1]->nOutputs() + size;
+    const uint64_t twoLayersSize = layers[ID-1]->nOutputs() + size;
     layers.emplace_back(
       std::make_unique<JoinLayer>(ID+1, twoLayersSize, 2)
     );
@@ -45,20 +45,20 @@ void Builder::addInput(const Uint size)
   nInputs += size;
 }
 
-void Builder::addLayer(const Uint layerSize,
+void Builder::addLayer(const uint64_t layerSize,
                        const std::string funcType,
                        const bool isOutputLayer,
                        const std::string layerType,
-                       const Uint iLink)
+                       const uint64_t iLink)
 {
   if(bBuilt) die("Cannot build the network multiple times");
 
-  const Uint ID = layers.size();
+  const uint64_t ID = layers.size();
   if(iLink<1 || ID<iLink || layers[ID-iLink]==nullptr || nInputs==0)
     die("Missing input layer.");
   if(layerSize <= 0)  die("Requested empty layer.");
 
-  const Uint layerInputSize = layers[ID-iLink]->nOutputs();
+  const uint64_t layerInputSize = layers[ID-iLink]->nOutputs();
 
   if (layerType == "LSTM")
   {
@@ -98,16 +98,16 @@ void Builder::addLayer(const Uint layerSize,
   if(isOutputLayer) nOutputs += layers.back()->nOutputs();
 }
 
-void Builder::addParamLayer(Uint size, std::string funcType, Real init_vals)
+void Builder::addParamLayer(uint64_t size, std::string funcType, Real init_vals)
 {
   addParamLayer(size, funcType, std::vector<Real>(size, init_vals) );
 }
 
-void Builder::addParamLayer(Uint size,
+void Builder::addParamLayer(uint64_t size,
                             std::string funcType,
                             std::vector<Real> init_vals)
 {
-  const Uint ID = layers.size();
+  const uint64_t ID = layers.size();
   if(bBuilt) die("Cannot build the network multiple times\n");
   if(size<=0) die("Requested an empty layer\n");
   layers.emplace_back(
@@ -169,14 +169,14 @@ void Builder::build(const bool isInputNet)
     opt = std::make_shared<AdamOptimizer>(settings,distrib,weights,threadGrads);
 }
 
-void Builder::addConv2d(const Conv2D_Descriptor& descr, bool bOut, Uint iLink)
+void Builder::addConv2d(const Conv2D_Descriptor& descr, bool bOut, uint64_t iLink)
 {
   if(bBuilt) die("Cannot build the network multiple times");
-  const Uint ID = layers.size();
+  const uint64_t ID = layers.size();
   if(iLink<1 || ID<iLink || layers[ID-iLink]==nullptr || nInputs==0)
     die("Missing input layer.");
 
-  const Uint inpSize = descr.inpFeatures * descr.inpY * descr.inpX;
+  const uint64_t inpSize = descr.inpFeatures * descr.inpY * descr.inpX;
   if( layers[ID-iLink]->nOutputs() not_eq inpSize )
     _die("Mismatch between input size (%d) and previous layer size (%d).",
       inpSize, layers.back()->nOutputs() );

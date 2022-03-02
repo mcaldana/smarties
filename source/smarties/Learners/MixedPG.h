@@ -19,12 +19,12 @@ struct MixedPGstats
   Real Qerrm2 = 0;
   Rvec SPGm1, SPGm2, DPGm1, DPGm2;
 
-  MixedPGstats(const Uint nA) : SPGm1(Rvec(nA, 0)),
+  MixedPGstats(const uint64_t nA) : SPGm1(Rvec(nA, 0)),
     SPGm2(Rvec(nA, 0)), DPGm1(Rvec(nA, 0)), DPGm2(Rvec(nA, 0)) {}
 
   void add(const Rvec& SPG, const Rvec& DPG, const Real errQ) {
     Qerrm2   += std::pow(errQ, 2);
-    for (Uint i = 0; i < DPG.size(); ++i) {
+    for (uint64_t i = 0; i < DPG.size(); ++i) {
       SPGm1[i] += SPG[i];
       SPGm2[i] += SPG[i] * SPG[i];
       DPGm1[i] += DPG[i];
@@ -33,18 +33,18 @@ struct MixedPGstats
   }
 
   static void update(Rvec & DPGfactor, Real & errQfactor,
-                     std::vector<MixedPGstats> & stats, const Uint nA,
+                     std::vector<MixedPGstats> & stats, const uint64_t nA,
                      const Real learnRate, const Real batchSize)
   {
     Real varErrQ = 0;
-    for (Uint j=0; j<stats.size(); ++j) {
+    for (uint64_t j=0; j<stats.size(); ++j) {
       varErrQ += stats[j].Qerrm2 / batchSize; stats[j].Qerrm2 = 0;
     }
     errQfactor += learnRate * (varErrQ - errQfactor);
 
-    for (Uint i = 0; i < nA; ++i) {
+    for (uint64_t i = 0; i < nA; ++i) {
       Real meanDPG = 0, varDPG = 0, meanSPG = 0, varSPG = 0;
-      for (Uint j = 0; j < stats.size(); ++j) {
+      for (uint64_t j = 0; j < stats.size(); ++j) {
         meanDPG += stats[j].DPGm1[i] / batchSize; stats[j].DPGm1[i] = 0;
         varDPG  += stats[j].DPGm2[i] / batchSize; stats[j].DPGm2[i] = 0;
         meanSPG += stats[j].SPGm1[i] / batchSize; stats[j].SPGm1[i] = 0;
@@ -61,7 +61,7 @@ struct MixedPGstats
 
 class MixedPG : public Learner_approximator
 {
-  const Uint nA = aInfo.dim();
+  const uint64_t nA = aInfo.dim();
   const Real explNoise = settings.explNoise;
   Rvec DPGfactor = Rvec(nA, 0);
   Real errQfactor = 0;
@@ -70,7 +70,7 @@ class MixedPG : public Learner_approximator
   Approximator* actor;
   Approximator* critc;
 
-  void Train(const MiniBatch& MB, const Uint wID, const Uint bID) const override;
+  void Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const override;
 
 public:
   MixedPG(MDPdescriptor&, HyperParameters&, ExecutionInfo&);

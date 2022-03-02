@@ -16,12 +16,12 @@ namespace smarties
 
 class LSTMLayer: public Layer
 {
-  const Uint nInputs, nCells;
+  const uint64_t nInputs, nCells;
   const std::unique_ptr<Function> cell;
 
  public:
-  void requiredParameters(std::vector<Uint>& nWeight,
-                          std::vector<Uint>& nBiases ) const override
+  void requiredParameters(std::vector<uint64_t>& nWeight,
+                          std::vector<uint64_t>& nBiases ) const override
   {
     //cell, input, forget, output gates all linked to inp and prev LSTM output
     nWeight.push_back(4*nCells * (nInputs + nCells) );
@@ -46,9 +46,9 @@ class LSTMLayer: public Layer
     |================| |================| |================| |================|
         dE/dInput        dE/dInput Gate     dE/dForget Gate    dE/dOutput Gate
   */
-  void requiredActivation(std::vector<Uint>& sizes,
-                          std::vector<Uint>& bOutputs,
-                          std::vector<Uint>& bInputs) const override
+  void requiredActivation(std::vector<uint64_t>& sizes,
+                          std::vector<uint64_t>& bOutputs,
+                          std::vector<uint64_t>& bInputs) const override
   {
     sizes.push_back(4*nCells);
     bOutputs.push_back(bOutput);
@@ -56,8 +56,8 @@ class LSTMLayer: public Layer
   }
   void biasInitialValues(const std::vector<Real> init) override { }
 
-  LSTMLayer(Uint _ID, Uint _nInputs, Uint _nCells, std::string funcType,
-    bool bOut, Uint iLink) :  Layer(_ID, _nCells, bOut, false, iLink),
+  LSTMLayer(uint64_t _ID, uint64_t _nInputs, uint64_t _nCells, std::string funcType,
+    bool bOut, uint64_t iLink) :  Layer(_ID, _nCells, bOut, false, iLink),
     nInputs(_nInputs), nCells(_nCells), cell(makeFunction(funcType))
   {
     spanCompInpGrads = _nInputs;
@@ -85,10 +85,10 @@ class LSTMLayer: public Layer
     {
       const nnReal* const inputs = curr->Y(ID-link);
       const nnReal* const weight = para->W(ID);
-      for (Uint i = 0; i < nInputs; ++i) {
+      for (uint64_t i = 0; i < nInputs; ++i) {
         const nnReal* const W = weight + (4*nCells)*i;
         #pragma omp simd aligned(suminp, inputs, W : VEC_WIDTH)
-        for (Uint o = 0; o < 4*nCells; ++o) suminp[o] += inputs[i] * W[o];
+        for (uint64_t o = 0; o < 4*nCells; ++o) suminp[o] += inputs[i] * W[o];
       }
     }
 
@@ -97,10 +97,10 @@ class LSTMLayer: public Layer
       const nnReal* const inputs = prev->Y(ID);
       const nnReal* const weight = para->W(ID) +(4*nCells)*nInputs;
       //first input loop, here input only prev step LSTM's output
-      for (Uint i = 0; i < nCells; ++i) {
+      for (uint64_t i = 0; i < nCells; ++i) {
         const nnReal* const W = weight + (4*nCells)*i;
         #pragma omp simd aligned(suminp, inputs, W : VEC_WIDTH)
-        for (Uint o = 0; o < 4*nCells; ++o) suminp[o] += inputs[i] * W[o];
+        for (uint64_t o = 0; o < 4*nCells; ++o) suminp[o] += inputs[i] * W[o];
       }
     }
     {
@@ -116,7 +116,7 @@ class LSTMLayer: public Layer
       const nnReal*const forgtG = curr->X(ID)+ 2*nCells;
       const nnReal*const outptG = curr->X(ID)+ 3*nCells;
 
-      for (Uint o=0; o<nCells; ++o) {
+      for (uint64_t o=0; o<nCells; ++o) {
        const nnReal oldStatePass = prev==nullptr? 0 : prevSt[o] * forgtG[o];
        currSt[o] = suminp[o] * inputG[o] + oldStatePass;
        cellOp[o] = Tanh::_eval(currSt[o]);
@@ -146,7 +146,7 @@ class LSTMLayer: public Layer
     const nnReal*const nxtStErr = next==nullptr? nullptr :next->Y(ID) +3*nCells;
     const nnReal*const nxtFGate = next==nullptr? nullptr :next->X(ID) +2*nCells;
 
-    for (Uint o=0; o<nCells; ++o) {
+    for (uint64_t o=0; o<nCells; ++o) {
       const nnReal D = deltas[o]; //before overwriting it
       //                  |      derivative of tanh     |
       const nnReal diff = (1-cellOutput[o]*cellOutput[o]) * deltas[o];
@@ -173,17 +173,17 @@ class LSTMLayer: public Layer
     std::uniform_real_distribution<nnReal> dis(-init, init);
     { // forget gate starts open, inp/out gates are closed
      nnReal* const BB = W->B(ID);
-     for(Uint o=0*nCells; o<1*nCells; ++o) BB[o]=0;
-     //for(Uint o=1*nCells; o<2*nCells; ++o) BB[o]=dis(*gen)+LSTM_PRIME_FAC;
-     //for(Uint o=2*nCells; o<3*nCells; ++o) BB[o]=dis(*gen)-LSTM_PRIME_FAC;
-     //for(Uint o=3*nCells; o<4*nCells; ++o) BB[o]=dis(*gen)+LSTM_PRIME_FAC;
-     for(Uint o=1*nCells; o<2*nCells; ++o) BB[o]=0-LSTM_PRIME_FAC;
-     for(Uint o=2*nCells; o<3*nCells; ++o) BB[o]=0+LSTM_PRIME_FAC;
-     for(Uint o=3*nCells; o<4*nCells; ++o) BB[o]=0-LSTM_PRIME_FAC;
+     for(uint64_t o=0*nCells; o<1*nCells; ++o) BB[o]=0;
+     //for(uint64_t o=1*nCells; o<2*nCells; ++o) BB[o]=dis(*gen)+LSTM_PRIME_FAC;
+     //for(uint64_t o=2*nCells; o<3*nCells; ++o) BB[o]=dis(*gen)-LSTM_PRIME_FAC;
+     //for(uint64_t o=3*nCells; o<4*nCells; ++o) BB[o]=dis(*gen)+LSTM_PRIME_FAC;
+     for(uint64_t o=1*nCells; o<2*nCells; ++o) BB[o]=0-LSTM_PRIME_FAC;
+     for(uint64_t o=2*nCells; o<3*nCells; ++o) BB[o]=0+LSTM_PRIME_FAC;
+     for(uint64_t o=3*nCells; o<4*nCells; ++o) BB[o]=0-LSTM_PRIME_FAC;
     }
     {
      nnReal* const weight = W->W(ID);
-     for(Uint w=0; w<4*nCells*(nInputs+nCells); ++w) weight[w] = dis(G);
+     for(uint64_t w=0; w<4*nCells*(nInputs+nCells); ++w) weight[w] = dis(G);
     }
   }
   size_t  save(const Parameters * const para,
@@ -191,9 +191,9 @@ class LSTMLayer: public Layer
   {
     const nnReal* const bias = para->B(ID);
     const nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<4*nCells * (nInputs+nCells); ++n)
+    for (uint64_t n=0; n<4*nCells * (nInputs+nCells); ++n)
         *(tmp++) = (float) weight[n];
-    for (Uint n=0; n<4*nCells; ++n)
+    for (uint64_t n=0; n<4*nCells; ++n)
         *(tmp++) = (float) bias[n];
     return 4*nCells * (nInputs+nCells + 1);
   }
@@ -202,9 +202,9 @@ class LSTMLayer: public Layer
   {
     nnReal* const bias = para->B(ID);
     nnReal* const weight = para->W(ID);
-    for (Uint n=0; n<4*nCells * (nInputs+nCells); ++n)
+    for (uint64_t n=0; n<4*nCells * (nInputs+nCells); ++n)
         weight[n] = (nnReal) *(tmp++);
-    for (Uint n=0; n<4*nCells; ++n)
+    for (uint64_t n=0; n<4*nCells; ++n)
         bias[n] = (nnReal) *(tmp++);
     return 4*nCells * (nInputs+nCells + 1);
   }

@@ -20,7 +20,7 @@ class Builder
   bool bBuilt = false;
 
 public:
-  void addInput(const Uint size);
+  void addInput(const uint64_t size);
 
   /*
     addLayer adds fully conn. layer:
@@ -36,15 +36,15 @@ public:
                This allows networks with multiple heads, but always each
                layer has only one input layer (+ eventual recurrent connection).
   */
-  void addLayer(const Uint nNeurons,
+  void addLayer(const uint64_t nNeurons,
                 const std::string funcType,
                 const bool bOutput=false,
                 const std::string layerType="",
-                const Uint iLink = 1);
+                const uint64_t iLink = 1);
 
-  void addParamLayer(Uint size, std::string funcType="Linear", Real init=0);
+  void addParamLayer(uint64_t size, std::string funcType="Linear", Real init=0);
 
-  void addParamLayer(Uint size, std::string funcType, std::vector<Real> init);
+  void addParamLayer(uint64_t size, std::string funcType, std::vector<Real> init);
 
 
   template<typename T>
@@ -54,7 +54,7 @@ public:
     layers.back()->biasInitialValues(init);
   }
 
-  void addConv2d(const Conv2D_Descriptor&, bool bOutput=false, Uint iLink = 1);
+  void addConv2d(const Conv2D_Descriptor&, bool bOutput=false, uint64_t iLink = 1);
 
   // Function that initializes and constructs net and optimizer.
   // Once this is called number of layers or weights CANNOT be modified.
@@ -62,7 +62,7 @@ public:
 
   const ExecutionInfo & distrib;
   const HyperParameters & settings;
-  Uint nInputs=0, nOutputs=0, nLayers=0;
+  uint64_t nInputs=0, nOutputs=0, nLayers=0;
 
   std::vector<std::shared_ptr<Parameters>> threadGrads;
   std::vector<std::unique_ptr<Layer>> layers;

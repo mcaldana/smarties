@@ -36,12 +36,12 @@ class Sampling
  public:
   Sampling(std::vector<std::mt19937>&G, MemoryBuffer*const R, bool bSampleSeqs);
   virtual ~Sampling() {}
-  virtual void sample(std::vector<Uint>& seq, std::vector<Uint>& obs) = 0;
+  virtual void sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs) = 0;
   virtual void prepare() = 0;
-  void IDtoSeqStep_par(std::vector<Uint>& seq, std::vector<Uint>& obs,
-                       const std::vector<Uint>& ret, const Uint nSeqs);
-  void IDtoSeqStep(std::vector<Uint>& seq, std::vector<Uint>& obs,
-                  const std::vector<Uint>& ret, const Uint nSeqs);
+  void IDtoSeqStep_par(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs,
+                       const std::vector<uint64_t>& ret, const uint64_t nSeqs);
+  void IDtoSeqStep(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs,
+                  const std::vector<uint64_t>& ret, const uint64_t nSeqs);
   virtual bool requireImportanceWeights() = 0;
 
   static std::unique_ptr<Sampling> prepareSampler(MemoryBuffer * const,
@@ -53,37 +53,37 @@ class Sample_uniform : public Sampling
 {
  public:
   Sample_uniform(std::vector<std::mt19937>&G, MemoryBuffer*const R, bool bSeqs);
-  void sample(std::vector<Uint>& seq, std::vector<Uint>& obs) override;
+  void sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs) override;
   void prepare() override;
   bool requireImportanceWeights() override;
 };
 
 class TSample_impRank : public Sampling
 {
-  std::discrete_distribution<Uint> distObs;
+  std::discrete_distribution<uint64_t> distObs;
  public:
   TSample_impRank(std::vector<std::mt19937>&, MemoryBuffer*const, bool bSeqs);
-  void sample(std::vector<Uint>& seq, std::vector<Uint>& obs) override;
+  void sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs) override;
   void prepare() override;
   bool requireImportanceWeights() override;
 };
 
 class TSample_impErr : public Sampling
 {
-  std::discrete_distribution<Uint> distObs;
+  std::discrete_distribution<uint64_t> distObs;
  public:
   TSample_impErr(std::vector<std::mt19937>&, MemoryBuffer*const, bool bSeqs);
-  void sample(std::vector<Uint>& seq, std::vector<Uint>& obs) override;
+  void sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs) override;
   void prepare() override;
   bool requireImportanceWeights() override;
 };
 
 class Sample_impSeq : public Sampling
 {
-  std::discrete_distribution<Uint> distObs;
+  std::discrete_distribution<uint64_t> distObs;
  public:
   Sample_impSeq(std::vector<std::mt19937>&, MemoryBuffer*const, bool bSeqs);
-  void sample(std::vector<Uint>& seq, std::vector<Uint>& obs) override;
+  void sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs) override;
   void prepare() override;
   bool requireImportanceWeights() override;
 };

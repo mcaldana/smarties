@@ -179,7 +179,7 @@ void HyperParameters::defineDistributedLearning(ExecutionInfo& distrib)
 {
   const MPI_Comm& learnersComm = distrib.learners_train_comm;
   //const MPI_Comm& gatheringComm = distrib.master_workers_comm;
-  const Uint nLearners = learnersComm==MPI_COMM_NULL? 1
+  const uint64_t nLearners = learnersComm==MPI_COMM_NULL? 1
                          : MPICommSize(learnersComm);
   const Real nL = nLearners;
   // each learner computes a fraction of the batch:

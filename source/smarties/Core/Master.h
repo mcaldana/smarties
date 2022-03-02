@@ -19,13 +19,13 @@ namespace smarties
 template <typename CommType, typename Request_t>
 class Master : public Worker
 {
-  std::atomic<Uint> bExit {0};
+  std::atomic<uint64_t> bExit {0};
 
 protected:
   std::vector<std::thread> worker_replies;
   CommType * interface() { return static_cast<CommType*> (this); }
 
-  void waitForStateActionCallers(const std::vector<Uint> givenWorkers);
+  void waitForStateActionCallers(const std::vector<uint64_t> givenWorkers);
 
 public:
   Master(ExecutionInfo& );
@@ -38,12 +38,12 @@ class MasterSockets : public Master<MasterSockets, SOCKET_REQ>
 {
 public:
 
-  void Irecv(void*const buffer, const Uint size, const int rank,
+  void Irecv(void*const buffer, const uint64_t size, const int rank,
     const int tag, SOCKET_REQ& request) const {
     SOCKET_Irecv(buffer, size, getSocketID(rank), request);
   }
 
-  void  Send(void*const buffer, const Uint size, const int rank,
+  void  Send(void*const buffer, const uint64_t size, const int rank,
     const int tag) const {
     SOCKET_Bsend(buffer, size, getSocketID(rank));
   }
@@ -67,12 +67,12 @@ class MasterMPI : public Master<MasterMPI, MPI_Request>
 {
 public:
 
-  void Irecv(void*const buffer, const Uint size, const int rank,
+  void Irecv(void*const buffer, const uint64_t size, const int rank,
     const int tag, MPI_Request& req) const {
     MPI(Irecv, buffer, size, MPI_BYTE, rank, tag, master_workers_comm, & req);
   }
 
-  void  Send(void*const buffer, const Uint size, const int rank,
+  void  Send(void*const buffer, const uint64_t size, const int rank,
     const int tag) const {
     MPI(Send, buffer, size, MPI_BYTE, rank, tag, master_workers_comm);
   }

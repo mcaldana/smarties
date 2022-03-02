@@ -16,9 +16,9 @@ namespace smarties
 
 struct MiniBatch
 {
-  const Uint size;
+  const uint64_t size;
 
-  MiniBatch(const Uint _size) : size(_size)
+  MiniBatch(const uint64_t _size) : size(_size)
   {
     episodes.resize(size);
     begTimeStep.resize(size);
@@ -32,24 +32,24 @@ struct MiniBatch
   MiniBatch& operator=(const MiniBatch &p) = delete;
 
   std::vector<Episode*> episodes;
-  std::vector<Sint> begTimeStep;
-  std::vector<Sint> endTimeStep;
-  std::vector<Sint> sampledTimeStep;
-  Sint sampledBegStep(const Uint b) const { return begTimeStep[b]; }
-  Sint sampledEndStep(const Uint b) const { return endTimeStep[b]; }
-  Sint sampledTstep(const Uint b) const { return sampledTimeStep[b]; }
-  Sint sampledNumSteps(const Uint b) const {
+  std::vector<int64_t> begTimeStep;
+  std::vector<int64_t> endTimeStep;
+  std::vector<int64_t> sampledTimeStep;
+  int64_t sampledBegStep(const uint64_t b) const { return begTimeStep[b]; }
+  int64_t sampledEndStep(const uint64_t b) const { return endTimeStep[b]; }
+  int64_t sampledTstep(const uint64_t b) const { return sampledTimeStep[b]; }
+  int64_t sampledNumSteps(const uint64_t b) const {
     assert(begTimeStep.size() > b);
     assert(endTimeStep.size() > b);
     return endTimeStep[b] - begTimeStep[b];
   }
-  Sint mapTime2Ind(const Uint b, const Sint t) const
+  int64_t mapTime2Ind(const uint64_t b, const int64_t t) const
   {
     assert(begTimeStep.size() >  b and begTimeStep[b]     <= t);
     //ind is mapping from time stamp along trajectoy and along alloc memory
     return t - begTimeStep[b];
   }
-  Sint mapInd2Time(const Uint b, const Sint k) const
+  int64_t mapInd2Time(const uint64_t b, const int64_t k) const
   {
     assert(begTimeStep.size() > b);
     //ind is mapping from time stamp along trajectoy and along alloc memory
@@ -61,115 +61,115 @@ struct MiniBatch
   std::vector< std::vector< Real  > > R;  // scaled reward
   std::vector< std::vector< nnReal> > PERW;  // prioritized sampling
 
-  Episode& getEpisode(const Uint b) const
+  Episode& getEpisode(const uint64_t b) const
   {
     return * episodes[b];
   }
 
-  NNvec& state(const Uint b, const Sint t)
+  NNvec& state(const uint64_t b, const int64_t t)
   {
     return S[b][mapTime2Ind(b, t)];
   }
-  const NNvec& state(const Uint b, const Sint t) const
+  const NNvec& state(const uint64_t b, const int64_t t) const
   {
     return S[b][mapTime2Ind(b, t)];
   }
-  Real& reward(const Uint b, const Sint t)
+  Real& reward(const uint64_t b, const int64_t t)
   {
     return R[b][mapTime2Ind(b, t)];
   }
-  const Real& reward(const Uint b, const Sint t) const
+  const Real& reward(const uint64_t b, const int64_t t) const
   {
     return R[b][mapTime2Ind(b, t)];
   }
-  nnReal& PERweight(const Uint b, const Sint t)
+  nnReal& PERweight(const uint64_t b, const int64_t t)
   {
     return PERW[b][mapTime2Ind(b, t)];
   }
-  const nnReal& PERweight(const Uint b, const Sint t) const
+  const nnReal& PERweight(const uint64_t b, const int64_t t) const
   {
     return PERW[b][mapTime2Ind(b, t)];
   }
-  const Rvec& action(const Uint b, const Uint t) const
+  const Rvec& action(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->actions[t];
   }
-  const Rvec& mu(const Uint b, const Uint t) const
+  const Rvec& mu(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->policies[t];
   }
-  nnReal& returnEstimate(const Uint b, const Uint t) const
+  nnReal& returnEstimate(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->returnEstimator[t];
   }
-  std::vector<nnReal> returnEstimates(const Uint dt = 0) const
+  std::vector<nnReal> returnEstimates(const uint64_t dt = 0) const
   {
     std::vector<nnReal> ret(size, 0);
-    for(Uint b=0; b<size; ++b) {
+    for(uint64_t b=0; b<size; ++b) {
       const auto t = sampledTstep(b);
-      assert(t >= (Sint) dt);
+      assert(t >= (int64_t) dt);
       ret[b] = episodes[b]->returnEstimator[t-dt];
     }
     return ret;
   }
-  nnReal& value(const Uint b, const Uint t) const
+  nnReal& value(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->stateValue[t];
   }
-  nnReal& advantage(const Uint b, const Uint t) const
+  nnReal& advantage(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->actionAdvantage[t];
   }
 
 
-  bool isTerminal(const Uint b, const Uint t) const
+  bool isTerminal(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->isTerminal(t);
   }
   std::vector<int> isNextTerminal() const // pybind will not like vector of bool
   {
     std::vector<int> ret(size, 0);
-    for(Uint b=0; b<size; ++b)
+    for(uint64_t b=0; b<size; ++b)
       ret[b] = episodes[b]->isTerminal(sampledTstep(b) + 1);
     return ret;
   }
-  bool isTruncated(const Uint b, const Uint t) const
+  bool isTruncated(const uint64_t b, const uint64_t t) const
   {
     return episodes[b]->isTruncated(t);
   }
   std::vector<int> isNextTruncated() const //pybind will not like vector of bool
   {
     std::vector<int> ret(size, 0);
-    for(Uint b=0; b<size; ++b)
+    for(uint64_t b=0; b<size; ++b)
       ret[b] = episodes[b]->isTruncated(sampledTstep(b)+1);
     return ret;
   }
-  Uint nTimeSteps(const Uint b) const
+  uint64_t nTimeSteps(const uint64_t b) const
   {
     return episodes[b]->nsteps();
   }
-  Uint nDataSteps(const Uint b) const //terminal/truncated state not actual data
+  uint64_t nDataSteps(const uint64_t b) const //terminal/truncated state not actual data
   {
     return episodes[b]->ndata();
   }
-  Uint indCurrStep(const Uint b=0) const
+  uint64_t indCurrStep(const uint64_t b=0) const
   {
     assert(episodes[b]->nsteps() > 0);
     return episodes[b]->nsteps() - 1;
   }
 
-  void setMseDklImpw(const Uint b, const Uint t, // batch id and time id
+  void setMseDklImpw(const uint64_t b, const uint64_t t, // batch id and time id
     const Fval E, const Fval D, const Fval W,    // error, dkl, offpol weight
     const Fval C, const Fval invC) const         // bounds of offpol weight
   {
     getEpisode(b).updateCumulative_atomic(t, E, D, W, C, invC);
   }
 
-  void setValues(const Uint b, const Uint t, const Fval V) const
+  void setValues(const uint64_t b, const uint64_t t, const Fval V) const
   {
     return setValues(b, t, V, V);
   }
-  void setValues(const Uint b, const Uint t, const Fval V, const Fval Q) const
+  void setValues(const uint64_t b, const uint64_t t, const Fval V, const Fval Q) const
   {
     getEpisode(b).updateValues_atomic(t, V, Q);
   }
@@ -191,7 +191,7 @@ struct MiniBatch
   {
     assert(Vs.size() == size and Qs.size() == size);
     #pragma omp parallel for schedule(static)
-    for(Uint b=0; b<size; ++b) setValues(b, sampledTstep(b), Vs[b], Qs[b]);
+    for(uint64_t b=0; b<size; ++b) setValues(b, sampledTstep(b), Vs[b], Qs[b]);
   }
 
   template<typename T>
@@ -199,7 +199,7 @@ struct MiniBatch
   {
     assert(values.size() == size);
     #pragma omp parallel for schedule(static)
-    for(Uint b=0; b<size; ++b) {
+    for(uint64_t b=0; b<size; ++b) {
       const auto t = sampledTstep(b);
       if( isTruncated(b, t+1) ) setValues(b, t+1, values[b]);
       else if( isTerminal (b, t+1) ) setValues(b, t+1, 0);
@@ -213,11 +213,11 @@ struct MiniBatch
                         const Fval C, const Fval invC) const
   {
     assert(deltaVal.size() ==size && DKLs.size() ==size && rhos.size() ==size);
-    for(Uint b=0; b<size; ++b)
+    for(uint64_t b=0; b<size; ++b)
       setMseDklImpw(b, sampledTstep(b), deltaVal[b], DKLs[b], rhos[b], C,invC);
   }
 
-  void resizeStep(const Uint b, const Uint nSteps)
+  void resizeStep(const uint64_t b, const uint64_t nSteps)
   {
     assert( S.size()>b and R.size()>b);
     S[b].resize(nSteps); R[b].resize(nSteps); PERW[b].resize(nSteps);

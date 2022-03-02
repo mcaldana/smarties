@@ -18,18 +18,18 @@ namespace smarties
 {
 /*
 template<typename Advantage_t, typename Policy_t, typename Action_t>
-void testPolicyAdvantage(std::vector<Uint> polInds, std::vector<Uint> advInds,
-  std::vector<Uint> netOuts, std::mt19937& gen, const ActionInfo& aI)
+void testPolicyAdvantage(std::vector<uint64_t> polInds, std::vector<uint64_t> advInds,
+  std::vector<uint64_t> netOuts, std::mt19937& gen, const ActionInfo& aI)
 {
-  const Uint nA = Policy_t::compute_nA(aI);
-  const Uint nPol = Policy_t::compute_nPol(aI);
+  const uint64_t nA = Policy_t::compute_nA(aI);
+  const uint64_t nPol = Policy_t::compute_nPol(aI);
   Rvec mu(nPol), noise(nA);
   Rvec nnOut;
   std::normal_distribution<Real> dist(0, 1);
-  for(Uint j=0; j < netOuts.size(); ++j)
-      for(Uint i=0; i < netOuts[j]; ++i)
+  for(uint64_t j=0; j < netOuts.size(); ++j)
+      for(uint64_t i=0; i < netOuts[j]; ++i)
           nnOut.push_back(dist(gen));
-  for(Uint i=0; i<nPol; ++i) mu[i] = dist(gen);
+  for(uint64_t i=0; i<nPol; ++i) mu[i] = dist(gen);
   Policy_t pol1(polInds, aI, nnOut);
   Policy_t pol2({0, nA}, aI, mu);
   Advantage_t adv(advInds, aI, nnOut, & pol1);
@@ -40,18 +40,18 @@ void testPolicyAdvantage(std::vector<Uint> polInds, std::vector<Uint> advInds,
 
 void Gaussian_advantage::test(const Rvec& act, std::mt19937& gen) const
 {
-  const Uint numNetOutputs = netOutputs.size();
+  const uint64_t numNetOutputs = netOutputs.size();
   Rvec _grad(numNetOutputs, 0);
   grad(act, 1, _grad);
   std::ofstream fout("mathtest.log", std::ios::app);
-  for(Uint i = 0; i<nL; ++i)
+  for(uint64_t i = 0; i<nL; ++i)
   {
     Rvec out_1 = netOutputs, out_2 = netOutputs;
-    const Uint index = start_coefs+i;
+    const uint64_t index = start_coefs+i;
     out_1[index] -= 0.0001; out_2[index] += 0.0001;
 
-    Gaussian_advantage a1(std::vector<Uint>{start_coefs}, aInfo, out_1, policy);
-    Gaussian_advantage a2(std::vector<Uint>{start_coefs}, aInfo, out_2, policy);
+    Gaussian_advantage a1(std::vector<uint64_t>{start_coefs}, aInfo, out_1, policy);
+    Gaussian_advantage a2(std::vector<uint64_t>{start_coefs}, aInfo, out_2, policy);
     const Real A_1 = a1.computeAdvantage(act), A_2 = a2.computeAdvantage(act);
     const Real fdiff =(A_2-A_1)/.0002, abserr = std::fabs(_grad[index]-fdiff);
     const Real scale = std::max(std::fabs(fdiff), std::fabs(_grad[index]));
@@ -69,18 +69,18 @@ void Quadratic_advantage::test(const Rvec& act, std::mt19937& gen) const
   Rvec _grad(netOutputs.size(), 0);
   grad(act, 1, _grad);
   std::ofstream fout("mathtest.log", std::ios::app);
-  for(Uint i = 0; i<nL+nA; ++i)
+  for(uint64_t i = 0; i<nL+nA; ++i)
   {
     Rvec out_1 = netOutputs, out_2 = netOutputs;
     if(i>=nL && start_mean == 0) continue;
-    const Uint index = i>=nL ? start_mean+i-nL : start_matrix+i;
+    const uint64_t index = i>=nL ? start_mean+i-nL : start_matrix+i;
     out_1[index] -= nnEPS;
     out_2[index] += nnEPS;
 
-    Quadratic_advantage a1 = Quadratic_advantage(std::vector<Uint>{start_matrix,
+    Quadratic_advantage a1 = Quadratic_advantage(std::vector<uint64_t>{start_matrix,
       start_mean}, aInfo, out_1, policy);
 
-    Quadratic_advantage a2 = Quadratic_advantage(std::vector<Uint>{start_matrix,
+    Quadratic_advantage a2 = Quadratic_advantage(std::vector<uint64_t>{start_matrix,
       start_mean}, aInfo, out_2, policy);
 
     const Real A_1 = a1.computeAdvantage(act);

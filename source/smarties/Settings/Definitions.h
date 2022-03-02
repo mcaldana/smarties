@@ -18,8 +18,8 @@
 namespace smarties
 {
 
-using Uint = size_t;
-using Sint = ptrdiff_t;
+using uint64_t = size_t;
+using int64_t = ptrdiff_t;
 ////////////////////////////////////////////////////////////////////////////////
 #if 1 // MAIN CODE PRECISION
 using Real = double;
@@ -60,11 +60,11 @@ using LDvec = std::vector<long double>;
 
 struct Conv2D_Descriptor
 {
-  Uint inpFeatures, inpY, inpX; //input image: channels, x:width, y:height:
-  Uint outFeatures, outY, outX; // output image
-  Uint filterx, filtery; // tot size : inpFeatures*outFeatures*filterx*filtery
-  Uint stridex, stridey;
-  Uint paddinx, paddiny;
+  uint64_t inpFeatures, inpY, inpX; //input image: channels, x:width, y:height:
+  uint64_t outFeatures, outY, outX; // output image
+  uint64_t filterx, filtery; // tot size : inpFeatures*outFeatures*filterx*filtery
+  uint64_t stridex, stridey;
+  uint64_t paddinx, paddiny;
 };
 
 }

@@ -27,10 +27,10 @@ Launcher::Launcher(Worker* const W, ExecutionInfo& D) :
 
 bool Launcher::forkApplication(const environment_callback_t & callback)
 {
-  //const Uint nThreads = distrib.nThreads;
-  const Uint nOwnEnvs = distrib.nOwnedEnvironments;
-  const Uint totNumEnvs = distrib.nEnvironments;
-  const Uint totNumProcess = MPICommSize(distrib.world_comm);
+  //const uint64_t nThreads = distrib.nThreads;
+  const uint64_t nOwnEnvs = distrib.nOwnedEnvironments;
+  const uint64_t totNumEnvs = distrib.nEnvironments;
+  const uint64_t totNumProcess = MPICommSize(distrib.world_comm);
 
   bool isChild = false;
   // TODO: reinstate the omp thread stuff for mpi implementations that do
@@ -42,7 +42,7 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
     const int thrID = 0, thrN = 1;
     const int tgtCPU =  ( ( (-1-i) % thrN ) + thrN ) % thrN;
     const int workloadID = i + totNumEnvs * totNumProcess;
-    //assert(nThreads == (Uint) omp_get_num_threads());
+    //assert(nThreads == (uint64_t) omp_get_num_threads());
     if( thrID==tgtCPU and isChild == false)
       //#pragma omp critical
       {
@@ -52,8 +52,8 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
           isChild = true;
           usleep(10); // IDK, wait for parent to create socket file to be sure
           //warn("entering SOCKET_clientConnect");
-          SOCK.server = SOCKET_clientConnect();
-          if(SOCK.server == -1) die("Failed to connect to parent process.");
+          m_Sockets.server = SOCKET_clientConnect();
+          if(m_Sockets.server == -1) die("Failed to connect to parent process.");
           //warn("exiting SOCKET_clientConnect");
           launch(callback, workloadID, MPI_COMM_SELF);
         } else assert(isChild == false);
@@ -62,7 +62,7 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
 
   if(not isChild) {
     //warn("entering SOCKET_serverConnect");
-    SOCKET_serverConnect(nOwnEnvs, SOCK.clients);
+    SOCKET_serverConnect(nOwnEnvs, m_Sockets.clients);
     //warn("exiting SOCKET_serverConnect");
   }
   return isChild;
@@ -70,7 +70,7 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
 
 void Launcher::runApplication(const environment_callback_t & callback )
 {
-  const Sint thisWorkerGroupID = distrib.thisWorkerGroupID;
+  const int64_t thisWorkerGroupID = distrib.thisWorkerGroupID;
   const MPI_Comm envApplication_comm = distrib.environment_app_comm;
   if(thisWorkerGroupID<0) die("Error in setup of envApplication_comm");
   assert(envApplication_comm not_eq MPI_COMM_NULL);
@@ -78,11 +78,11 @@ void Launcher::runApplication(const environment_callback_t & callback )
 }
 
 void Launcher::launch(const environment_callback_t & callback,
-                      const Uint workLoadID,
+                      const uint64_t workLoadID,
                       const MPI_Comm envApplication_comm)
 {
-  const Uint appSize = MPICommSize(envApplication_comm);
-  const Uint appRank = MPICommRank(envApplication_comm);
+  const uint64_t appSize = MPICommSize(envApplication_comm);
+  const uint64_t appRank = MPICommRank(envApplication_comm);
   // app only needs lower level functionalities:
   // ie. send state, recv action, specify state/action spaces properties...
   Communicator* const commptr = static_cast<Communicator*>(this);
@@ -94,12 +94,12 @@ void Launcher::launch(const environment_callback_t & callback,
     // create dedicated directory for the process:
     createGoRunDir(currDirectory, workLoadID, envApplication_comm);
 
-    Uint settInd = 0;
+    uint64_t settInd = 0;
     for(size_t i=0; i<argsFiles.size(); ++i)
-      if(globalTstepCounter >= argFilesStepsLimits[i]) settInd = i;
+      if(m_globalTstepCounter >= argFilesStepsLimits[i]) settInd = i;
 
     assert(argFilesStepsLimits.size() > settInd+1 && distrib.nEnvironments > 0);
-    Uint numTstepSett = argFilesStepsLimits[settInd+1] - globalTstepCounter;
+    uint64_t numTstepSett = argFilesStepsLimits[settInd+1] - m_globalTstepCounter;
     numTstepSett = numTstepSett * appSize / distrib.nEnvironments;
     std::vector<char*> args = readRunArgLst(argsFiles[settInd]);
 
@@ -115,7 +115,7 @@ void Launcher::launch(const environment_callback_t & callback,
 
     for(size_t i = 0; i < args.size()-1; ++i) delete[] args[i];
     chdir(currDirectory);  // go to original directory
-    if(bTrainIsOver) break;
+    if(m_bTrainIsOver) break;
   }
 }
 
@@ -142,16 +142,16 @@ void Launcher::initArgumentFileNames()
     _die("mismatch in sizes: argsFiles=%s stepNmbrs=%s",
       vec2string(argsFiles).c_str(), vec2string(stepNmbrs).c_str());
 
-  argFilesStepsLimits = std::vector<Uint>(argsFiles.size(), 0);
+  argFilesStepsLimits = std::vector<uint64_t>(argsFiles.size(), 0);
   argFilesStepsLimits[0] = 0; // first settings file is used from step 0
   for (size_t i=1; i<stepNmbrs.size(); ++i)
     argFilesStepsLimits[i]= argFilesStepsLimits[i-1] +std::stol(stepNmbrs[i-1]);
   //last setup used for ever:
-  argFilesStepsLimits.push_back(std::numeric_limits<Uint>::max());
+  argFilesStepsLimits.push_back(std::numeric_limits<uint64_t>::max());
   assert(argFilesStepsLimits.size() == argsFiles.size() + 1);
 }
 
-void Launcher::createGoRunDir(char* initDir, Uint folderID, MPI_Comm envAppCom)
+void Launcher::createGoRunDir(char* initDir, uint64_t folderID, MPI_Comm envAppCom)
 {
   char newDir[1024];
   getcwd(initDir, 512);

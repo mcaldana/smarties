@@ -16,17 +16,17 @@ namespace smarties
 
 class NAF : public Learner_approximator
 {
-  const Uint nA = aInfo.dim(), nL;
+  const uint64_t nA = aInfo.dim(), nL;
   //Network produces a vector. The two following vectors specify:
   // - the sizes of the elements that compose the vector
   // - the starting indices along the output vector of each
-  const std::vector<Uint> net_outputs = {1, nL, nA, nA};
-  const std::vector<Uint> net_indices = {0, 1, 1+nL, 1+nL+nA};
+  const std::vector<uint64_t> net_outputs = {1, nL, nA, nA};
+  const std::vector<uint64_t> net_indices = {0, 1, 1+nL, 1+nL+nA};
   const Real OrUhDecay = settings.clipImpWeight <= 0 ? 0.85 : 0;
   //const Real OrUhDecay = 0; // as in original
   std::vector<Rvec> OrUhState = std::vector<Rvec>( nAgents, Rvec(nA, 0) );
 
-  void Train(const MiniBatch&MB, const Uint wID,const Uint bID) const override;
+  void Train(const MiniBatch&MB, const uint64_t wID,const uint64_t bID) const override;
 
 public:
   NAF(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_);

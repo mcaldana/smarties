@@ -63,7 +63,7 @@ struct Agent
   std::normal_distribution<Real> distribution;
   std::uniform_real_distribution<Real> safety;
 
-  Agent(Uint _ID, Uint workID, Uint _localID, MDPdescriptor& _MDP) :
+  Agent(uint64_t _ID, uint64_t workID, uint64_t _localID, MDPdescriptor& _MDP) :
     ID(_ID), workerID(workID), localID(_localID), MDP(_MDP) {}
 
   void reset()
@@ -103,12 +103,12 @@ struct Agent
    * @param label     Integer corresponding to selected action.
    * @param policyVec Categorical probabilities for each discrete action option.
    */
-  void setAction(const Uint label, const Rvec& policyVec) {
+  void setAction(const uint64_t label, const Rvec& policyVec) {
     action = aInfo.label2actionMessage<double>(label);
     assert(policyVec.size() == MDP.policyVecDim);
     policyVector = policyVec;
   }
-  Uint getDiscreteAction() const {
+  uint64_t getDiscreteAction() const {
     return aInfo.actionMessage2label(action);
   }
 
@@ -258,7 +258,7 @@ struct Agent
 
   // for dumping to state-action-reward-policy binary log (writeBuffer):
   mutable float buf[OUTBUFFSIZE];
-  mutable std::atomic<Uint> buffCnter {0};
+  mutable std::atomic<uint64_t> buffCnter {0};
 
   void writeBuffer(const char* const logpath, const int rank) const
   {
@@ -273,7 +273,7 @@ struct Agent
   }
 
   void writeData(const char* const logpath, const int rank,
-                 const Rvec& polVec, const Uint globalTstep) const
+                 const Rvec& polVec, const uint64_t globalTstep) const
   {
     // possible race conditions, avoided by the fact that each worker
     // (and therefore agent) can only be handled by one thread at the time
@@ -281,18 +281,18 @@ struct Agent
     assert(state.size() == MDP.dimS());
     assert(action.size() == MDP.dimAct());
     assert(polVec.size() == MDP.dimPol());
-    const Uint writesize = 4 + MDP.dimS() + MDP.dimAct() + polVec.size();
+    const uint64_t writesize = 4 + MDP.dimS() + MDP.dimAct() + polVec.size();
     if(OUTBUFFSIZE<writesize) die("Increase compile-time OUTBUFFSIZE variable");
     assert( buffCnter % writesize == 0 );
     if(buffCnter+writesize > OUTBUFFSIZE) writeBuffer(logpath, rank);
-    Uint ind = buffCnter;
+    uint64_t ind = buffCnter;
     buf[ind++] = globalTstep + 0.1;
     buf[ind++] = status2int(agentStatus) + 0.1;
     buf[ind++] = timeStepInEpisode + 0.1;
-    for (Uint i=0; i<state.size(); ++i) buf[ind++] = (float) state[i];
-    for (Uint i=0; i<action.size(); ++i) buf[ind++] = (float) action[i];
+    for (uint64_t i=0; i<state.size(); ++i) buf[ind++] = (float) state[i];
+    for (uint64_t i=0; i<action.size(); ++i) buf[ind++] = (float) action[i];
     buf[ind++] = reward;
-    for (Uint i=0; i<polVec.size(); ++i) buf[ind++] = (float) polVec[i];
+    for (uint64_t i=0; i<polVec.size(); ++i) buf[ind++] = (float) polVec[i];
 
     buffCnter += writesize;
     assert(buffCnter == ind);
@@ -304,8 +304,8 @@ struct Agent
       const auto isInvalid = [] (const double val) {
         return std::isnan(val) or std::isinf(val);
       };
-      for(Uint j=0; j<action.size(); ++j) if(isInvalid(action[j])) return true;
-      for(Uint j=0; j< state.size(); ++j) if(isInvalid( state[j])) return true;
+      for(uint64_t j=0; j<action.size(); ++j) if(isInvalid(action[j])) return true;
+      for(uint64_t j=0; j< state.size(); ++j) if(isInvalid( state[j])) return true;
       return isInvalid(reward);
     #else
       return false;
@@ -334,9 +334,9 @@ struct Agent
     // only one agent (0) needs to set a noise vector, and
     // if noise is non shared then this does not matter:
     if(localID > 0 or not MDP.bAgentsShareNoise) return;
-    for(Uint i=0; i<MDP.dimAct(); ++i)
+    for(uint64_t i=0; i<MDP.dimAct(); ++i)
       MDP.sharedNoiseVecTic[i] = sampleClippedGaussian();
-    for(Uint i=0; i<MDP.dimAct(); ++i)
+    for(uint64_t i=0; i<MDP.dimAct(); ++i)
       MDP.sharedNoiseVecToc[i] = sampleClippedGaussian();
   }
 
@@ -349,14 +349,14 @@ struct Agent
       if(localID == 0) // agent 0 prepares next noise vector for the team:
       {
         auto& nxtNoise = bTic? MDP.sharedNoiseVecToc : MDP.sharedNoiseVecTic;
-        for(Uint i=0; i<MDP.dimAct(); ++i) nxtNoise[i] = sampleClippedGaussian();
+        for(uint64_t i=0; i<MDP.dimAct(); ++i) nxtNoise[i] = sampleClippedGaussian();
       }
       return bTic? MDP.sharedNoiseVecTic : MDP.sharedNoiseVecToc;
     }
     else
     {
       Rvec sample(MDP.dimAct());
-      for(Uint i=0; i<MDP.dimAct(); ++i) sample[i] = sampleClippedGaussian();
+      for(uint64_t i=0; i<MDP.dimAct(); ++i) sample[i] = sampleClippedGaussian();
       return sample;
     }
   }

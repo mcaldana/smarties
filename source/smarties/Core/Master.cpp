@@ -70,13 +70,13 @@ void Master<CommType, Request_t>::spawnCallsHandlers()
 
   #pragma omp parallel num_threads(distrib.nThreads)
   {
-    std::vector<Uint> shareWorkers;
-    const Uint thrN = omp_get_num_threads();
-    const Uint thrID = thrN-1 - omp_get_thread_num(); // thrN-1, thrN-2, ..., 0
-    const Uint workerShare = std::ceil(nCallingEnvs / (double) thrN);
-    const Uint workerBeg = thrID * workerShare;
-    const Uint workerEnd = std::min(nCallingEnvs, (thrID+1)*workerShare);
-    for(Uint i=workerBeg; i<workerEnd; ++i) shareWorkers.push_back(i);
+    std::vector<uint64_t> shareWorkers;
+    const uint64_t thrN = omp_get_num_threads();
+    const uint64_t thrID = thrN-1 - omp_get_thread_num(); // thrN-1, thrN-2, ..., 0
+    const uint64_t workerShare = std::ceil(nCallingEnvs / (double) thrN);
+    const uint64_t workerBeg = thrID * workerShare;
+    const uint64_t workerEnd = std::min(nCallingEnvs, (thrID+1)*workerShare);
+    for(uint64_t i=workerBeg; i<workerEnd; ++i) shareWorkers.push_back(i);
     #pragma omp critical
     if (shareWorkers.size())
       worker_replies.push_back (
@@ -86,13 +86,13 @@ void Master<CommType, Request_t>::spawnCallsHandlers()
 }
 
 template<typename CommType, typename Request_t>
-void Master<CommType,Request_t>::waitForStateActionCallers(const std::vector<Uint> givenWorkers)
+void Master<CommType,Request_t>::waitForStateActionCallers(const std::vector<uint64_t> givenWorkers)
 {
   const size_t nClients = givenWorkers.size();
   std::vector<Request_t> reqs(nClients);
   // worker's rank is its index (givenWorkers[i]) plus 1 (master)
   for(size_t i=0; i<nClients; ++i) {
-    const Uint callerID = givenWorkers[i]+1;
+    const uint64_t callerID = givenWorkers[i]+1;
     const COMM_buffer& B = getCommBuffer( callerID );
     interface()->Irecv(B.dataStateBuf, B.sizeStateMsg, callerID, 78283, reqs[i]);
   }
@@ -108,7 +108,7 @@ void Master<CommType,Request_t>::waitForStateActionCallers(const std::vector<Uin
     }
     // now all requests are completed and waiting to recv an 'action': terminate
     for(size_t i=0; i<nClients; ++i) {
-      const Uint callID = givenWorkers[i], callRank = callID+1;
+      const uint64_t callID = givenWorkers[i], callRank = callID+1;
       const COMM_buffer& B = getCommBuffer(callRank);
       Agent::messageLearnerStatus((char*) B.dataActionBuf) = KILL;
       interface()->Send(B.dataActionBuf, B.sizeActionMsg, callRank, 22846);
@@ -117,7 +117,7 @@ void Master<CommType,Request_t>::waitForStateActionCallers(const std::vector<Uin
 
   for(size_t i=0; ; ++i) // infinite loop : communicate until break command
   {
-    const Uint j = i % nClients, callID = givenWorkers[j], callRank = callID+1;
+    const uint64_t j = i % nClients, callID = givenWorkers[j], callRank = callID+1;
     // communication handle is rank_of_worker := workerID + 1 (master is 0)
     const int completed = interface()->TestComm(reqs[j]);
     //Learners lock workers if they have enough data to advance step

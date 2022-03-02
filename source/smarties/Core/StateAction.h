@@ -21,11 +21,11 @@ namespace smarties
 static inline void sendRecvVectorFunc(
   const std::function<void(void*, size_t)>& sendRecvFunc, std::vector<bool>&vec)
 {
-  Uint vecSize = vec.size();
-  sendRecvFunc(&vecSize, 1 * sizeof(Uint) );
+  uint64_t vecSize = vec.size();
+  sendRecvFunc(&vecSize, 1 * sizeof(uint64_t) );
   if(vec.size() not_eq vecSize) vec.resize(vecSize);
   if(vecSize == 0) return;
-  //else assert( vecSize == (Uint) vec.size() );
+  //else assert( vecSize == (uint64_t) vec.size() );
   std::vector<int> intvec(vec.begin(), vec.end());
   sendRecvFunc( intvec.data(), vecSize * sizeof(int) );
   std::copy(intvec.begin(), intvec.end(), vec.begin());
@@ -36,17 +36,17 @@ template<typename T>
 static inline void sendRecvVectorFunc(
   const std::function<void(void*, size_t)>& sendRecvFunc, std::vector<T>& vec )
 {
-  Uint vecSize = vec.size();
-  sendRecvFunc(&vecSize, 1 * sizeof(Uint) );
+  uint64_t vecSize = vec.size();
+  sendRecvFunc(&vecSize, 1 * sizeof(uint64_t) );
   if(vec.size() not_eq vecSize) vec.resize(vecSize);
   if(vecSize == 0) return;
-  //else assert( vecSize == (Uint) vec.size() );
+  //else assert( vecSize == (uint64_t) vec.size() );
   sendRecvFunc( vec.data(), vecSize * sizeof(T) );
 }
 
 struct MDPdescriptor
 {
-  Uint localID = 0; // ID of agent-int-environment which uses this MDP
+  uint64_t localID = 0; // ID of agent-int-environment which uses this MDP
 
   // This struct contains all information to fully define the state and action
   // space of an agent. Only source of complication is that this must hold for
@@ -54,7 +54,7 @@ struct MDPdescriptor
 
   ///////////////////////////// STATE DESCRIPTION /////////////////////////////
   // Number of state dimensions and number of state dims observable to learner:
-  Uint dimState = 0, dimStateObserved = 0;
+  uint64_t dimState = 0, dimStateObserved = 0;
   // vector specifying whether a state component is observable to the learner:
   std::vector<bool> bStateVarObserved;
   // mean and scale of state variables: will be computed from replay memory:
@@ -69,10 +69,10 @@ struct MDPdescriptor
 
   ///////////////////////////// ACTION DESCRIPTION /////////////////////////////
   // dimensionality of action vector
-  Uint dimAction = 0;
+  uint64_t dimAction = 0;
   // dimensionality of policy vector (typically 2*dimAction for continuous act,
   // which are mean and diag covariance, or dimAction for discrete policy)
-  Uint policyVecDim = 0;
+  uint64_t policyVecDim = 0;
 
   // whether action have a lower && upper bounded (bool)
   // if true scaled action = tanh ( unscaled action )
@@ -82,12 +82,12 @@ struct MDPdescriptor
 
   // DISCRETE ACTION stuff:
   //each component of action vector has a vector of possible values:
-  std::vector<Uint> discreteActionValues;
-  Uint maxActionLabel; //number of actions options for discretized act spaces
+  std::vector<uint64_t> discreteActionValues;
+  uint64_t maxActionLabel; //number of actions options for discretized act spaces
   // to map between value and dicrete action option we need 'shifts':
-  std::vector<Uint> discreteActionShifts;
+  std::vector<uint64_t> discreteActionShifts;
 
-  Uint nAppendedObs = 0;
+  uint64_t nAppendedObs = 0;
   bool isPartiallyObservable = false;
 
   // In the common case where act = policy (or mean) + stdev * N(0,1)
@@ -101,23 +101,23 @@ struct MDPdescriptor
   std::vector<Conv2D_Descriptor> conv2dDescriptors;
   void synchronize(const std::function<void(void*, size_t)>& sendRecvFunc);
 
-  Uint dimS()    const { return dimState; }
-  Uint dimObs()  const { return dimStateObserved; }
-  Uint dimInfo() const { return  dimState - dimStateObserved; }
+  uint64_t dimS()    const { return dimState; }
+  uint64_t dimObs()  const { return dimStateObserved; }
+  uint64_t dimInfo() const { return  dimState - dimStateObserved; }
 
-  Real getActMaxVal(const Uint i) const { return upperActionValue[i]; }
-  Real getActMinVal(const Uint i) const { return lowerActionValue[i]; }
-  bool isActBounded(const Uint i) const { return bActionSpaceBounded[i]; }
-  Uint dimAct()         const { return dimAction;      }
-  Uint dimPol()         const { return policyVecDim;   }
-  Uint dimDiscreteAct() const { return maxActionLabel; }
+  Real getActMaxVal(const uint64_t i) const { return upperActionValue[i]; }
+  Real getActMinVal(const uint64_t i) const { return lowerActionValue[i]; }
+  bool isActBounded(const uint64_t i) const { return bActionSpaceBounded[i]; }
+  uint64_t dimAct()         const { return dimAction;      }
+  uint64_t dimPol()         const { return policyVecDim;   }
+  uint64_t dimDiscreteAct() const { return maxActionLabel; }
   bool bDiscreteActions() const { return discreteActionValues.size() > 0; }
 
-  Real getActScale(const Uint i) const {
+  Real getActScale(const uint64_t i) const {
     assert(getActMaxVal(i)-getActMinVal(i) > std::numeric_limits<Real>::epsilon());
     return (getActMaxVal(i)-getActMinVal(i))/2;
   }
-  Real getActShift(const Uint i) const {
+  Real getActShift(const uint64_t i) const {
     return (getActMaxVal(i)+getActMinVal(i))/2;
   }
 };
@@ -137,7 +137,7 @@ struct StateInfo
   {
     assert(S.size() == MDP.dimS());
     std::vector<T> ret(MDP.dimObs());
-    for (Uint i=0, k=0; i<MDP.dimS(); ++i)
+    for (uint64_t i=0, k=0; i<MDP.dimS(); ++i)
       if (MDP.bStateVarObserved[i]) ret[k++] = S[i];
     return ret;
   }
@@ -151,7 +151,7 @@ struct StateInfo
   {
     assert(S.size() == MDP.dimS());
     std::vector<T> ret(MDP.dimInfo());
-    for (Uint i=0, k=0; i<MDP.dimS(); ++i)
+    for (uint64_t i=0, k=0; i<MDP.dimS(); ++i)
       if (not MDP.bStateVarObserved[i]) ret[k++] = S[i];
     return ret;
   }
@@ -166,7 +166,7 @@ struct StateInfo
   {
     assert(observ.size() == MDP.dimObs() and latent.size() == MDP.dimInfo());
     T ret(MDP.dimS());
-    for (Uint i=0, o=0, l=0; i<MDP.dimS(); ++i) {
+    for (uint64_t i=0, o=0, l=0; i<MDP.dimS(); ++i) {
       if (    MDP.bStateVarObserved[i]) ret[i] = observ[o++];
       else
       if (not MDP.bStateVarObserved[i]) ret[i] = latent[l++];
@@ -183,7 +183,7 @@ struct StateInfo
   scale(std::vector<T>& observed, const MDPdescriptor& MDP)
   {
     assert(observed.size() == MDP.dimObs());
-    for (Uint i=0; i<MDP.dimObs(); ++i)
+    for (uint64_t i=0; i<MDP.dimObs(); ++i)
       observed[i] = ( observed[i] - MDP.stateMean[i] ) * MDP.stateScale[i];
   }
 
@@ -197,7 +197,7 @@ struct StateInfo
   {
     assert(observed.size() == MDP.dimObs());
     std::vector<T> ret(MDP.dimObs());
-    for (Uint i=0; i<MDP.dimObs(); ++i)
+    for (uint64_t i=0; i<MDP.dimObs(); ++i)
       ret = ( observed[i] - MDP.stateMean[i] ) * MDP.stateScale[i];
   }
 };
@@ -208,18 +208,18 @@ struct ActionInfo
   ActionInfo(const MDPdescriptor & MDP_) : MDP(MDP_) {}
   ActionInfo(const ActionInfo& AI) : MDP(AI.MDP) {}
 
-  Real getActMaxVal(const Uint i) const { return MDP.getActMaxVal(i); }
-  Real getActMinVal(const Uint i) const { return MDP.getActMinVal(i); }
-  bool isBounded(const Uint i)    const { return MDP.isActBounded(i); }
+  Real getActMaxVal(const uint64_t i) const { return MDP.getActMaxVal(i); }
+  Real getActMinVal(const uint64_t i) const { return MDP.getActMinVal(i); }
+  bool isBounded(const uint64_t i)    const { return MDP.isActBounded(i); }
   bool isDiscrete()    const { return MDP.bDiscreteActions(); }
-  Uint dim()         const { return MDP.dimAct();         }
-  Uint dimPol()      const { return MDP.dimPol();         }
-  Uint dimDiscrete() const { return MDP.dimDiscreteAct(); }
+  uint64_t dim()         const { return MDP.dimAct();         }
+  uint64_t dimPol()      const { return MDP.dimPol();         }
+  uint64_t dimDiscrete() const { return MDP.dimDiscreteAct(); }
 
-  Real getActScale(const Uint i) const {
+  Real getActScale(const uint64_t i) const {
     return MDP.getActScale(i);
   }
-  Real getActShift(const Uint i) const {
+  Real getActShift(const uint64_t i) const {
     return MDP.getActShift(i);
   }
 
@@ -236,7 +236,7 @@ struct ActionInfo
     assert(not MDP.bDiscreteActions());
     std::vector<T> learnerAct(MDP.dimAct());
     assert( envAct.size() == learnerAct.size() );
-    for (Uint i=0; i<MDP.dimAct(); ++i) {
+    for (uint64_t i=0; i<MDP.dimAct(); ++i) {
       const Real descaled = (envAct[i] - MDP.getActShift(i))/MDP.getActScale(i);
       if(MDP.isActBounded(i)) assert(descaled > -1 && descaled < 1);
       learnerAct[i] = std::log((1+descaled)/(1-descaled)) / 2;
@@ -255,7 +255,7 @@ struct ActionInfo
     if(MDP.bDiscreteActions())
       return std::vector<T>(policy.begin(), policy.end());
 
-    const auto stdFactor = [&] (const Uint i, const Real mean) {
+    const auto stdFactor = [&] (const uint64_t i, const Real mean) {
       if (not MDP.isActBounded(i)) return static_cast<Real>(1);
       // var(f(x)) ~= (f'(mean(x)))^2 var(x), here f(x) is tanh(x)
       // f'(x)^2 = (2*exp(x)/(1+exp(x)*exp(x)))^4, but we write the stdev
@@ -263,10 +263,10 @@ struct ActionInfo
       return std::pow((2*expmean/(1 + expmean*expmean)), 2);
     };
 
-    const Uint dimA = MDP.dimAct();
+    const uint64_t dimA = MDP.dimAct();
     assert(policy.size() == 2*dimA && "Supports only gaussian/beta distrib");
     std::vector<T> envPol(2*dimA);
-    for (Uint i=0; i<dimA; ++i) {
+    for (uint64_t i=0; i<dimA; ++i) {
       const auto scale = MDP.getActScale(i), shift = MDP.getActShift(i);
       const auto bound = MDP.isActBounded(i)? std::tanh(policy[i]) : policy[i];
       envPol[i]      = scale * bound + shift;
@@ -287,7 +287,7 @@ struct ActionInfo
         return std::vector<T>(learnerAct.begin(), learnerAct.end());
     std::vector<T> envAct(MDP.dimAct());
     assert( learnerAct.size() == envAct.size() );
-    for (Uint i=0; i<MDP.dimAct(); ++i) {
+    for (uint64_t i=0; i<MDP.dimAct(); ++i) {
       const auto bound = MDP.isActBounded(i)? std::tanh(learnerAct[i]) : learnerAct[i];
       envAct[i] = MDP.getActScale(i) * bound + MDP.getActShift(i);
     }
@@ -296,22 +296,22 @@ struct ActionInfo
   /////////////////////////// CONTINUOUS ACTIONS END ///////////////////////////
 
   ////////////////////////////// DISCRETE ACTIONS //////////////////////////////
-  template<typename T> Uint
+  template<typename T> uint64_t
   actionMessage2label(const std::vector<T>& action) const
   {
     return actionMessage2label(action, MDP);
   }
-  template<typename T> static Uint
+  template<typename T> static uint64_t
   actionMessage2label(const std::vector<T>& action, const MDPdescriptor& MDP)
   {
     //map from discretized action (entry per component of values vectors) to int
     assert(MDP.bDiscreteActions());
     assert(action.size() == MDP.dimAction);
     assert(MDP.discreteActionShifts.size() == MDP.dimAction);
-    Uint label = 0;
-    for (Uint i=0; i < MDP.dimAction; ++i) {
+    uint64_t label = 0;
+    for (uint64_t i=0; i < MDP.dimAction; ++i) {
       // actions are passed around like doubles, but here map to int
-      const Uint valI = std::floor(action[i]);
+      const uint64_t valI = std::floor(action[i]);
       assert(valI < MDP.discreteActionValues[i]);
       label += MDP.discreteActionShifts[i] * valI;
     }
@@ -320,19 +320,19 @@ struct ActionInfo
   }
 
   template<typename T = Real> std::vector<T>
-  label2actionMessage(Uint label) const
+  label2actionMessage(uint64_t label) const
   {
     return label2actionMessage(label, MDP);
   }
   template<typename T = Real> static std::vector<T>
-  label2actionMessage(Uint label, const MDPdescriptor& MDP)
+  label2actionMessage(uint64_t label, const MDPdescriptor& MDP)
   {
     assert(MDP.bDiscreteActions());
     assert(label < MDP.maxActionLabel);
     //map an int to the corresponding entries in the values vec
     std::vector<T> action( MDP.dimAction );
-    for (Uint i = MDP.dimAction; i>0; --i) {
-      const Uint index_i = label / MDP.discreteActionShifts[i-1];
+    for (uint64_t i = MDP.dimAction; i>0; --i) {
+      const uint64_t index_i = label / MDP.discreteActionShifts[i-1];
       assert(index_i < MDP.discreteActionValues[i-1]);
       action[i-1] = index_i + (T)0.1; // convert to real to move around
       label = label % MDP.discreteActionShifts[i-1];

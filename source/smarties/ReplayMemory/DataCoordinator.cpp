@@ -148,7 +148,7 @@ void DataCoordinator::mastersRecvEpisodes()
 
   if(workersEP.size())
   {
-    const Uint nStep = Episode::computeTotalEpisodeNstep(MDP, workersEP.size());
+    const uint64_t nStep = Episode::computeTotalEpisodeNstep(MDP, workersEP.size());
     replay->increaseLocalSeenSteps(nStep - 1); // we do not count last state
     replay->increaseLocalSeenEps();
 

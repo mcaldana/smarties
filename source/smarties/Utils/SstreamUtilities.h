@@ -25,7 +25,7 @@ inline std::string vec2string(const std::vector<std::string> vals)
 {
   std::ostringstream o;
   if(!vals.size()) return o.str();
-  for (Uint i=0; i<vals.size()-1; ++i) o << vals[i] << " ";
+  for (uint64_t i=0; i<vals.size()-1; ++i) o << vals[i] << " ";
   o << vals[vals.size()-1];
   return o.str();
 }
@@ -36,7 +36,7 @@ inline std::string vec2string(const std::vector<T> vals, const int width = -1)
   std::ostringstream o;
   if(!vals.size()) return o.str();
   if(width>0) o << std::setprecision(3) << std::fixed;
-  for (Uint i=0; i<vals.size()-1; ++i) o << vals[i] << " ";
+  for (uint64_t i=0; i<vals.size()-1; ++i) o << vals[i] << " ";
   o << vals[vals.size()-1];
   return o.str();
 }

@@ -16,14 +16,14 @@ namespace smarties
 
 class DPG : public Learner_approximator
 {
-  const Uint nA = aInfo.dim();
+  const uint64_t nA = aInfo.dim();
   const Real OrUhDecay = settings.clipImpWeight <= 0 ? 0.85 : 0; // as in original
   //const Real OrUhDecay = 0; // no correlated noise
   std::vector<Rvec> OrUhState = std::vector<Rvec>(nAgents, Rvec(nA,0));
   Approximator* actor;
   Approximator* critc;
 
-  void Train(const MiniBatch& MB, const Uint wID, const Uint bID) const override;
+  void Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) const override;
 
 public:
   DPG(MDPdescriptor&, HyperParameters&, ExecutionInfo&);
