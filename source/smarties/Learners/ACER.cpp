@@ -157,7 +157,7 @@ void ACER::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -174,7 +174,7 @@ void ACER::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();
@@ -196,17 +196,17 @@ ACER::ACER(MDPdescriptor& MDP_, HyperParameters& S_, ExecutionInfo& D_):
   if(bCreatedEncorder) encoder->initializeNetwork();
 
   networks.push_back(
-    new Approximator("policy", settings, distrib, data.get(), encoder)
+    new Approximator("policy", settings, m_ExecutionInfo, data.get(), encoder)
   );
   actor = networks.back();
 
   networks.push_back(
-    new Approximator("critic", settings, distrib, data.get(), encoder)
+    new Approximator("critic", settings, m_ExecutionInfo, data.get(), encoder)
   );
   value = networks.back();
 
   networks.push_back(
-    new Approximator("advntg", settings, distrib, data.get(), encoder)
+    new Approximator("advntg", settings, m_ExecutionInfo, data.get(), encoder)
   );
   advtg = networks.back();
 

@@ -216,7 +216,7 @@ int main(int argn, char **args)
     //cmaes_WriteToFile(&evo, "all", "allcmaes.dat");         /* write final results */
     cmaes_exit(evo); /* release memory */
     delete evo;
-    if(oldXmean not_eq nullptr) free(oldXmean);
+    if(oldXmean != nullptr) free(oldXmean);
     free(lower_bound); free(upper_bound);
     free(init_x); free(init_std);
 

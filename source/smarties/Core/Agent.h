@@ -144,7 +144,7 @@ struct Agent
 
   void packStateMsg(void * const buffer) const // put agent's state into buffer
   {
-    assert(buffer not_eq nullptr);
+    assert(buffer != nullptr);
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
@@ -162,7 +162,7 @@ struct Agent
 
   void unpackStateMsg(const void * const buffer) // get state from buffer
   {
-    assert(buffer not_eq nullptr);
+    assert(buffer != nullptr);
     const char * msgPos = (const char*) buffer;
     unsigned testAgentID, testStepID;
 
@@ -176,7 +176,7 @@ struct Agent
 
     // if timeStepInEpisode==testStepID then agent was told to pack and
     // unpack the same state. happens e.g. if learner == worker
-    //if(timeStepInEpisode not_eq testStepID)
+    //if(timeStepInEpisode != testStepID)
     {
       std::swap(sOld, state); //what is stored in state now is sold
       if(agentStatus == INIT) {
@@ -199,7 +199,7 @@ struct Agent
 
   void packActionMsg(void * const buffer) const
   {
-    assert(buffer not_eq nullptr);
+    assert(buffer != nullptr);
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
@@ -216,7 +216,7 @@ struct Agent
 
   void unpackActionMsg(const void * const buffer)
   {
-    assert(buffer not_eq nullptr);
+    assert(buffer != nullptr);
     const char * msgPos = (const char*) buffer;
     unsigned testAgentID;
     memcpy(&testAgentID,       msgPos, sizeof(unsigned));

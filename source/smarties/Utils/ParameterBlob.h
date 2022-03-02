@@ -37,8 +37,8 @@ namespace smarties
 class ParameterBlob
 {
   using dataInfo = std::pair<uint64_t, nnReal*>;
-  const ExecutionInfo & distrib;
-  const MPI_Comm comm = distrib.master_workers_comm;
+  const ExecutionInfo & m_ExecutionInfo;
+  const MPI_Comm comm = m_ExecutionInfo.master_workers_comm;
   ReplayStats & stats;
   ReplayCounters & counters;
   std::vector<dataInfo> dataList;
@@ -51,7 +51,7 @@ class ParameterBlob
 
 public:
   ParameterBlob(const ExecutionInfo& D, ReplayStats& S, ReplayCounters& C)
-    : distrib(D), stats(S), counters(C) {}
+    : m_ExecutionInfo(D), stats(S), counters(C) {}
 
   void add(const uint64_t size, nnReal * const data) {
     dataList.emplace_back(std::make_pair(size, data));

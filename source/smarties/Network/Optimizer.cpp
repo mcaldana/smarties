@@ -114,7 +114,7 @@ void AdamOptimizer::prepare_update(const Rvec& esLosses)
   if (learn_size > 1)
   { //add up gradients across master ranks
     MPI(Iallreduce, MPI_IN_PLACE, gradSum->params, gradSum->nParams, SMARTIES_MPI_NNVALUE_TYPE, MPI_SUM, learnersComm, &paramRequest);
-    assert(paramRequest not_eq MPI_REQUEST_NULL);
+    assert(paramRequest != MPI_REQUEST_NULL);
   }
   nStep++;
 }
@@ -122,7 +122,7 @@ void AdamOptimizer::prepare_update(const Rvec& esLosses)
 void AdamOptimizer::apply_update()
 {
   if(nStep == 0) die("nStep == 0");
-  if(learn_size > 1 && paramRequest not_eq MPI_REQUEST_NULL)
+  if(learn_size > 1 && paramRequest != MPI_REQUEST_NULL)
     MPI(Wait, &paramRequest, MPI_STATUS_IGNORE);
 
   using Algorithm = Adam;
@@ -201,7 +201,7 @@ int AdamOptimizer::restart(const NetLoadF_t& loadFunc, const std::string fname)
   int ret = 0;
   char currDirectory[512];
   getcwd(currDirectory, 512);
-  chdir(distrib.initial_runDir);
+  chdir(m_ExecutionInfo.initial_runDir);
 
   ret = loadFunc(weights.get(), fname+"_weights");
   if(target_weights) {
@@ -229,7 +229,7 @@ void AdamOptimizer::getHeaders(std::ostringstream&buff,const std::string nnName)
 
 Optimizer::Optimizer(const HyperParameters& S, const ExecutionInfo& D,
                      const std::shared_ptr<Parameters>& W) :
-distrib(D), settings(S), weights(W) {
+m_ExecutionInfo(D), settings(S), weights(W) {
   target_weights->copy(weights);
 }
 

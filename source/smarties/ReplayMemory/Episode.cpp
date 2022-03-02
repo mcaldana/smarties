@@ -155,7 +155,7 @@ inline bool isDifferent(const T& a, const T& b) {
 }
 template<typename T>
 inline bool isDifferent(const std::vector<T>& a, const std::vector<T>& b) {
-  if(a.size() not_eq b.size()) return true;
+  if(a.size() != b.size()) return true;
   for(size_t i=0; i<b.size(); ++i) if( isDifferent(a[i], b[i]) ) return true;
   return false;
 }
@@ -175,10 +175,10 @@ bool Episode::isEqual(const Episode & S) const
   if(isDifferent(S.offPolicImpW, offPolicImpW)) assert(false && "offPolicImpW");
   if(isDifferent(S.KullbLeibDiv, KullbLeibDiv)) assert(false && "KullbLeibDiv");
 
-  if(S.bReachedTermState not_eq bReachedTermState) assert(false && "ended");
-  if(S.ID           not_eq ID          ) assert(false && "ID");
-  if(S.just_sampled not_eq just_sampled) assert(false && "just_sampled");
-  if(S.agentID      not_eq agentID     ) assert(false && "agentID");
+  if(S.bReachedTermState != bReachedTermState) assert(false && "ended");
+  if(S.ID           != ID          ) assert(false && "ID");
+  if(S.just_sampled != just_sampled) assert(false && "just_sampled");
+  if(S.agentID      != agentID     ) assert(false && "agentID");
   return true;
 }
 

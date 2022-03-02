@@ -46,7 +46,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   if(bStateVarObserved.size() == 0)
     bStateVarObserved = std::vector<bool> (dimState, 1);
   sendRecvVectorFunc(sendRecvFunc, bStateVarObserved);
-  if( bStateVarObserved.size() not_eq (size_t) dimState)
+  if( bStateVarObserved.size() != (size_t) dimState)
     die("Application error in setup of bStateVarObserved.");
 
   dimStateObserved = 0;
@@ -63,7 +63,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   if(stateMean.size()==dimState and dimState > dimStateObserved)
     stateMean = StateInfo::state2observed<nnReal>(stateMean, *this);
   sendRecvVectorFunc(sendRecvFunc, stateMean);
-  if( stateMean.size() not_eq (size_t) dimStateObserved)
+  if( stateMean.size() != (size_t) dimStateObserved)
     die("Application error in setup of stateMean.");
 
   // by default agent can observer all components of action vector
@@ -71,7 +71,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   if(stateStdDev.size()==dimState and dimState > dimStateObserved)
     stateStdDev = StateInfo::state2observed<nnReal>(stateStdDev, *this);
   sendRecvVectorFunc(sendRecvFunc, stateStdDev);
-  if( stateStdDev.size() not_eq (size_t) dimStateObserved)
+  if( stateStdDev.size() != (size_t) dimStateObserved)
     die("Application error in setup of stateStdDev.");
 
   stateScale.resize(dimStateObserved);
@@ -93,21 +93,21 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
     if(bActionSpaceBounded.size() == 0)
       bActionSpaceBounded = std::vector<bool> (dimAction, 0);
     sendRecvVectorFunc(sendRecvFunc, bActionSpaceBounded);
-    if( bActionSpaceBounded.size() not_eq (size_t) dimAction)
+    if( bActionSpaceBounded.size() != (size_t) dimAction)
       die("Application error in setup of bActionSpaceBounded.");
 
     // by default agent's action space not scaled (ie up/low vals are -1 and 1)
     if(upperActionValue.size() == 0)
       upperActionValue = std::vector<Real> (dimAction,  1);
     sendRecvVectorFunc(sendRecvFunc, upperActionValue);
-    if( upperActionValue.size() not_eq (size_t) dimAction)
+    if( upperActionValue.size() != (size_t) dimAction)
       die("Application error in setup of upperActionValue.");
 
     // by default agent's action space not scaled (ie up/low vals are -1 and 1)
     if(lowerActionValue.size() == 0)
       lowerActionValue = std::vector<Real> (dimAction, -1);
     sendRecvVectorFunc(sendRecvFunc, lowerActionValue);
-    if( lowerActionValue.size() not_eq (size_t) dimAction)
+    if( lowerActionValue.size() != (size_t) dimAction)
       die("Application error in setup of lowerActionValue.");
 
     for (uint64_t i=0; i<dimAction; ++i) {
@@ -133,7 +133,7 @@ void MDPdescriptor::synchronize(const std::function<void(void*, size_t)>& sendRe
   {
     // Now some logic. The discreteActionValues vector now has size dimAction
     // iff action space is discrete, otherwise size zero and this is skipped.
-    if(discreteActionValues.size() not_eq (size_t) dimAction) die("Logic error");
+    if(discreteActionValues.size() != (size_t) dimAction) die("Logic error");
     sendRecvVectorFunc(sendRecvFunc, discreteActionValues);
 
     if(world_rank==0) printf("Discrete-action vector options :");

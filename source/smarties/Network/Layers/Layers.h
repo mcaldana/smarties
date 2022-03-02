@@ -36,7 +36,7 @@ inline static void GEMVomp(const uint64_t NX, const uint64_t NY, const uint64_t 
                            const T * __restrict__ const _X,
                                  T * __restrict__ const _Y)
 {
-  assert(_W not_eq nullptr && _X not_eq nullptr && _Y not_eq nullptr);
+  assert(_W != nullptr && _X != nullptr && _Y != nullptr);
   #if 0
     for (uint64_t o=0; o<NY; ++o) {
       const T* __restrict__ const W = _W + S * o;
@@ -145,7 +145,7 @@ class Layer
       #endif
     }
 
-    if(NR && prev not_eq nullptr)
+    if(NR && prev != nullptr)
     {
             nnReal* const errors = prev->E(ID);
       const nnReal* const weight = para->W(ID) +NOsimd*NI;
@@ -175,7 +175,7 @@ class Layer
       }
     }
 
-    if(NR && prev not_eq nullptr)
+    if(NR && prev != nullptr)
     {
       const nnReal* const inputs = prev->Y(ID);
             nnReal* const grad_w = grad->W(ID) +NOsimd*NI;

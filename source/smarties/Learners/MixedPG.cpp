@@ -134,7 +134,7 @@ void MixedPG::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -165,7 +165,7 @@ void MixedPG::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();
@@ -190,7 +190,7 @@ MixedPG::MixedPG(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& D):
   if(bCreatedEncorder) encoder->initializeNetwork();
 
   networks.push_back(
-    new Approximator("policy", settings, distrib, data.get(), encoder)
+    new Approximator("policy", settings, m_ExecutionInfo, data.get(), encoder)
   );
   actor = networks.back();
   actor->buildFromSettings(nA + 1);
@@ -199,7 +199,7 @@ MixedPG::MixedPG(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& D):
   actor->initializeNetwork();
 
   networks.push_back(
-    new Approximator("critic", settings, distrib, data.get(), encoder, actor)
+    new Approximator("critic", settings, m_ExecutionInfo, data.get(), encoder, actor)
   );
   critc = networks.back();
   critc->setAddedInput(NETWORK, nA);

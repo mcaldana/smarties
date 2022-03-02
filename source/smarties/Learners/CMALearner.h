@@ -18,8 +18,8 @@ template<typename Action_t>
 class CMALearner: public Learner_approximator
 {
   const uint64_t ESpopSize = settings.ESpopSize;
-  const uint64_t nOwnEnvs = distrib.nOwnedEnvironments;
-  const uint64_t nOwnAgents = distrib.nOwnedAgentsPerAlgo;
+  const uint64_t nOwnEnvs = m_ExecutionInfo.nOwnedEnvironments;
+  const uint64_t nOwnAgents = m_ExecutionInfo.nOwnedAgentsPerAlgo;
   const uint64_t nOwnAgentsPerEnv = nOwnAgents / nOwnEnvs;
 
   // counter per each env of how many agents have currently terminated on this

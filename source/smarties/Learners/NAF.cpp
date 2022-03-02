@@ -40,7 +40,7 @@ NAF::NAF(MDPdescriptor& MDP_, HyperParameters& S, ExecutionInfo& D):
   if(networks.size()>0) {
     networks[0]->rename("net"); // not preprocessing, is is the main&only net
   } else {
-    networks.push_back(new Approximator("net", settings, distrib, data.get()));
+    networks.push_back(new Approximator("net", settings, m_ExecutionInfo, data.get()));
   }
 
   networks[0]->setUseTargetNetworks();
@@ -100,7 +100,7 @@ void NAF::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -117,7 +117,7 @@ void NAF::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();
@@ -147,7 +147,7 @@ void NAF::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) con
   const bool isOff = isFarPolicy(RHO, CmaxRet, CinvRet);
 
   Real target = 0;
-  if(settings.returnsEstimator not_eq "none") {
+  if(settings.returnsEstimator != "none") {
     if (MB.isTruncated(bID, t+1))
       MB.setValues(bID, t+1, networks[0]->forward(bID, t+1)[net_indices[0]]);
     target = MB.returnEstimate(bID, t);

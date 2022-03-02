@@ -20,17 +20,17 @@ namespace smarties
 {
 
 Launcher::Launcher(Worker* const W, ExecutionInfo& D) :
-  Communicator(W, D.generators[0], D.bTrain), distrib(D)
+  Communicator(W, D.generators[0], D.bTrain), m_ExecutionInfo(D)
 {
   initArgumentFileNames();
 }
 
 bool Launcher::forkApplication(const environment_callback_t & callback)
 {
-  //const uint64_t nThreads = distrib.nThreads;
-  const uint64_t nOwnEnvs = distrib.nOwnedEnvironments;
-  const uint64_t totNumEnvs = distrib.nEnvironments;
-  const uint64_t totNumProcess = MPICommSize(distrib.world_comm);
+  //const uint64_t nThreads = m_ExecutionInfo.nThreads;
+  const uint64_t nOwnEnvs = m_ExecutionInfo.nOwnedEnvironments;
+  const uint64_t totNumEnvs = m_ExecutionInfo.nEnvironments;
+  const uint64_t totNumProcess = MPICommSize(m_ExecutionInfo.world_comm);
 
   bool isChild = false;
   // TODO: reinstate the omp thread stuff for mpi implementations that do
@@ -46,6 +46,7 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
     if( thrID==tgtCPU and isChild == false)
       //#pragma omp critical
       {
+        std::cout << "New fork" << std::endl;
         const int success = fork();
         if ( success == -1 ) die("Failed to fork.");
         if ( success ==  0 ) {
@@ -70,10 +71,10 @@ bool Launcher::forkApplication(const environment_callback_t & callback)
 
 void Launcher::runApplication(const environment_callback_t & callback )
 {
-  const int64_t thisWorkerGroupID = distrib.thisWorkerGroupID;
-  const MPI_Comm envApplication_comm = distrib.environment_app_comm;
+  const int64_t thisWorkerGroupID = m_ExecutionInfo.thisWorkerGroupID;
+  const MPI_Comm envApplication_comm = m_ExecutionInfo.environment_app_comm;
   if(thisWorkerGroupID<0) die("Error in setup of envApplication_comm");
-  assert(envApplication_comm not_eq MPI_COMM_NULL);
+  assert(envApplication_comm != MPI_COMM_NULL);
   launch(callback, thisWorkerGroupID, envApplication_comm);
 }
 
@@ -86,7 +87,7 @@ void Launcher::launch(const environment_callback_t & callback,
   // app only needs lower level functionalities:
   // ie. send state, recv action, specify state/action spaces properties...
   Communicator* const commptr = static_cast<Communicator*>(this);
-  assert(commptr not_eq nullptr);
+  assert(commptr != nullptr);
 
   while(true)
   {
@@ -98,19 +99,19 @@ void Launcher::launch(const environment_callback_t & callback,
     for(size_t i=0; i<argsFiles.size(); ++i)
       if(m_globalTstepCounter >= argFilesStepsLimits[i]) settInd = i;
 
-    assert(argFilesStepsLimits.size() > settInd+1 && distrib.nEnvironments > 0);
+    assert(argFilesStepsLimits.size() > settInd+1 && m_ExecutionInfo.nEnvironments > 0);
     uint64_t numTstepSett = argFilesStepsLimits[settInd+1] - m_globalTstepCounter;
-    numTstepSett = numTstepSett * appSize / distrib.nEnvironments;
+    numTstepSett = numTstepSett * appSize / m_ExecutionInfo.nEnvironments;
     std::vector<char*> args = readRunArgLst(argsFiles[settInd]);
 
     // process stdout file descriptor, so that we can revert:
     std::pair<int, fpos_t> currOutputFdescriptor;
-    if(distrib.redirectAppStdoutToFile)
+    if(m_ExecutionInfo.redirectAppStdoutToFile)
       redirect_stdout_init(currOutputFdescriptor, appRank);
 
     callback(commptr, envApplication_comm, args.size()-1, args.data());
 
-    if(distrib.redirectAppStdoutToFile)
+    if(m_ExecutionInfo.redirectAppStdoutToFile)
       redirect_stdout_finalize(currOutputFdescriptor);
 
     for(size_t i = 0; i < args.size()-1; ++i) delete[] args[i];
@@ -123,10 +124,10 @@ void Launcher::initArgumentFileNames()
 {
   // appSettings is a list of text files separated by commas
   // e.g. settings1.txt,settings2.txt,...
-  argsFiles = split(distrib.appSettings, ',');
+  argsFiles = split(m_ExecutionInfo.appSettings, ',');
   if(argsFiles.size() == 0) {
-    if(distrib.appSettings not_eq "")
-      _die("error in splitting appSettings %s", distrib.appSettings.c_str());
+    if(m_ExecutionInfo.appSettings != "")
+      _die("error in splitting appSettings %s", m_ExecutionInfo.appSettings.c_str());
     argsFiles.push_back("");
   }
   assert(argsFiles.size() > 0);
@@ -135,10 +136,10 @@ void Launcher::initArgumentFileNames()
   // run with a settings file before switching to the next one. e.g. 1000,...
   // Here '0' means : run the settings file for ever
   // If empty, we assume the settings file should be run for ever
-  if(distrib.nStepPappSett == "") distrib.nStepPappSett = "0";
-  std::vector<std::string> stepNmbrs = split(distrib.nStepPappSett, ',');
+  if(m_ExecutionInfo.nStepPappSett == "") m_ExecutionInfo.nStepPappSett = "0";
+  std::vector<std::string> stepNmbrs = split(m_ExecutionInfo.nStepPappSett, ',');
   using Utilities::vec2string;
-  if(argsFiles.size() not_eq stepNmbrs.size())
+  if(argsFiles.size() != stepNmbrs.size())
     _die("mismatch in sizes: argsFiles=%s stepNmbrs=%s",
       vec2string(argsFiles).c_str(), vec2string(stepNmbrs).c_str());
 
@@ -170,10 +171,10 @@ void Launcher::createGoRunDir(char* initDir, uint64_t folderID, MPI_Comm envAppC
       if( MPICommRank(envAppCom)<1 ) // app's root sets up dir
       {
         mkdir(newDir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        if(distrib.setupFolder not_eq "") //copy any file in the setup dir
+        if(m_ExecutionInfo.setupFolder != "") //copy any file in the setup dir
         {
-          if (copy_from_dir(("../"+distrib.setupFolder).c_str()) not_eq 0 )
-            _die("Error in copy from dir %s\n", distrib.setupFolder.c_str());
+          if (copy_from_dir(("../"+m_ExecutionInfo.setupFolder).c_str()) != 0 )
+            _die("Error in copy from dir %s\n", m_ExecutionInfo.setupFolder.c_str());
         }
       }
 
@@ -197,11 +198,11 @@ std::vector<char*> Launcher::readRunArgLst(const std::string& paramFile)
   };
 
   // first put argc argv into args:
-  for(int i=0; i<distrib.argc; ++i)
-    if(distrib.argv[i] not_eq nullptr)
-      addArg ( std::string( distrib.argv[i] ) );
+  for(int i=0; i<m_ExecutionInfo.argc; ++i)
+    if(m_ExecutionInfo.argv[i] != nullptr)
+      addArg ( std::string( m_ExecutionInfo.argv[i] ) );
 
-  if (paramFile not_eq "")
+  if (paramFile != "")
   {
     std::ifstream t( ("../"+paramFile).c_str() );
     std::string linestr((std::istreambuf_iterator<char>(t)),
@@ -220,7 +221,7 @@ std::vector<char*> Launcher::readRunArgLst(const std::string& paramFile)
       {
         token.erase(0, 1); // remove apostrophe ( should have been read as \' )
         std::string continuation;
-        while(token.back() not_eq '\'') { // if match apostrophe, we are done
+        while(token.back() != '\'') { // if match apostrophe, we are done
           if(!(iss >> continuation)) die("missing matching apostrophe");
           token += " " + continuation; // add next line to argv entry
         }

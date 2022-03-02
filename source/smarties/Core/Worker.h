@@ -23,7 +23,7 @@ namespace smarties
 class Worker
 {
 public:
-  Worker(ExecutionInfo& distribinfo);
+  Worker(ExecutionInfo& m_ExecutionInfoinfo);
   virtual ~Worker() {}
 
   void synchronizeEnvironments();
@@ -37,25 +37,25 @@ public:
   void run(const environment_callback_t & callback);
 
 protected:
-  ExecutionInfo& distrib;
-  TaskQueue dataTasks, algoTasks;
+  ExecutionInfo& m_ExecutionInfo;
+  TaskQueue m_DataTasks, m_AlgoTasks;
 
-  const std::unique_ptr<Launcher> COMM;
+  const std::unique_ptr<Launcher> m_Launcher;
 
-  const MPI_Comm& master_workers_comm = distrib.master_workers_comm;
-  const MPI_Comm& workerless_masters_comm = distrib.workerless_masters_comm;
-  const MPI_Comm& learners_train_comm = distrib.learners_train_comm;
-  const MPI_Comm& envAppComm = distrib.environment_app_comm;
-  const int envMPIrank = MPICommRank(envAppComm);
-  const int envMPIsize = MPICommSize(envAppComm);
+  const MPI_Comm& m_MasterWorkersComm = m_ExecutionInfo.master_workers_comm;
+  const MPI_Comm& m_WorkerlessMastersComm = m_ExecutionInfo.workerless_masters_comm;
+  const MPI_Comm& m_LearnersTrainComm = m_ExecutionInfo.learners_train_comm;
+  const MPI_Comm& m_EnvAppComm = m_ExecutionInfo.environment_app_comm;
+  const int m_EnvMPIrank = MPICommRank(m_EnvAppComm);
+  const int m_EnvMPIsize = MPICommSize(m_EnvAppComm);
 
-  std::vector<std::unique_ptr<Learner>> learners;
+  std::vector<std::unique_ptr<Learner>> m_Learners;
 
   Environment& m_Environment;
-  const std::vector<std::unique_ptr<Agent>>& agents;
+  const std::vector<std::unique_ptr<Agent>>& m_Agents;
 
-  const uint64_t nCallingEnvs = distrib.nOwnedEnvironments;
-  const int bTrain = distrib.bTrain;
+  const uint64_t m_nCallingEnvs = m_ExecutionInfo.nOwnedEnvironments;
+  const int m_bTrain = m_ExecutionInfo.bTrain;
 
   // small utility functions:
   uint64_t getLearnerID(const uint64_t agentIDlocal) const;

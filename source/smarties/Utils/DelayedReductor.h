@@ -17,16 +17,17 @@ namespace smarties
 {
 
 template<typename T>
-struct DelayedReductor
+class DelayedReductor
 {
   const MPI_Comm mpicomm;
   const uint64_t arysize, mpisize;
-  const ExecutionInfo & distrib;
+  const ExecutionInfo & m_ExecutionInfo;
   MPI_Request buffRequest = MPI_REQUEST_NULL;
   std::vector<T> return_ret = std::vector<T>(arysize, 0);
   std::vector<T> reduce_ret = std::vector<T>(arysize, 0);
   std::vector<T> partialret = std::vector<T>(arysize, 0);
 
+public:
   static int getSize(const MPI_Comm comm) {
     int size;
     MPI_Comm_size(comm, &size);

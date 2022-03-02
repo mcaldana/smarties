@@ -18,8 +18,8 @@ namespace smarties
 {
 
 Learner::Learner(MDPdescriptor& MD, HyperParameters& S, ExecutionInfo& D):
-  distrib(D), settings(S), MDP(MD),
-  data(std::make_unique<MemoryBuffer>(MDP, settings, distrib)) {
+  m_ExecutionInfo(D), settings(S), MDP(MD),
+  data(std::make_unique<MemoryBuffer>(MDP, settings, m_ExecutionInfo)) {
     MemoryProcessing::readERfilterAlgo(S); // just a printout
   }
 
@@ -200,10 +200,10 @@ void Learner::getHeaders(std::ostringstream& buf) const {}
 
 void Learner::restart()
 {
-  if(distrib.restart == "none") return;
+  if(m_ExecutionInfo.restart == "none") return;
   if(learn_rank==0) printf("Restarting from saved policy...\n");
 
-  data->restart(distrib.restart+"/"+learner_name);
+  data->restart(m_ExecutionInfo.restart+"/"+learner_name);
   //data->save("restarted_"+learner_name, 0, false);
 }
 

@@ -60,7 +60,7 @@ struct Parameters
     params( allocate_param(nParams, _mpisize) )  { }
 
   ~Parameters() {
-    if(params not_eq nullptr) free(params);
+    if(params != nullptr) free(params);
   }
 
   void reduceThreadsGrad(const std::vector<ParametersPtr_t>& grads) const

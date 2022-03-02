@@ -58,7 +58,7 @@ int Network::restart(const Parameters * const W,
     totWritten += written; // safety: allocated nParams, not wsize
     assert(totWritten <= W->nParams);
   }
-  if(wsize not_eq totWritten)
+  if(wsize != totWritten)
     _die("Mismatch in restarted file %s; contains:%lu read:%lu.",
       fname.c_str(), wsize, totWritten);
   fclose(wFile); free(buf);

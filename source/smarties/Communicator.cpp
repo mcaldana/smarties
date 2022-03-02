@@ -44,9 +44,9 @@ void Communicator::setActionScales(const std::vector<double> upper,
   }
   if(agentID >= (int) m_Environment.descriptors.size())
     die("Attempted to write to uninitialized MDPdescriptor");
-  if(upper.size() not_eq m_Environment.descriptors[agentID]->dimAction or
-     lower.size() not_eq m_Environment.descriptors[agentID]->dimAction or
-     bound.size() not_eq m_Environment.descriptors[agentID]->dimAction )
+  if(upper.size() != m_Environment.descriptors[agentID]->dimAction or
+     lower.size() != m_Environment.descriptors[agentID]->dimAction or
+     bound.size() != m_Environment.descriptors[agentID]->dimAction )
     die("size mismatch");
   if(m_Environment.descriptors[agentID]->bDiscreteActions())
     die("either continuous or discrete actions");
@@ -73,7 +73,7 @@ void Communicator::setActionOptions(const std::vector<int> options,
   }
   if(agentID >= (int) m_Environment.descriptors.size())
     die("Attempted to write to uninitialized MDPdescriptor");
-  if(options.size() not_eq m_Environment.descriptors[agentID]->dimAction)
+  if(options.size() != m_Environment.descriptors[agentID]->dimAction)
     die("size mismatch");
 
   m_Environment.descriptors[agentID]->discreteActionValues =
@@ -88,7 +88,7 @@ void Communicator::setStateObservable(const std::vector<bool> observable,
   }
   if(agentID >= (int) m_Environment.descriptors.size())
     die("Attempted to write to uninitialized MDPdescriptor");
-  if(observable.size() not_eq m_Environment.descriptors[agentID]->dimState)
+  if(observable.size() != m_Environment.descriptors[agentID]->dimState)
     die("size mismatch");
 
   m_Environment.descriptors[agentID]->bStateVarObserved =
@@ -106,7 +106,7 @@ void Communicator::setStateScales(const std::vector<double> upper,
   if(agentID >= (int) m_Environment.descriptors.size())
     die("Attempted to write to uninitialized MDPdescriptor");
   const uint64_t dimS = m_Environment.descriptors[agentID]->dimState;
-  if(upper.size() not_eq dimS or lower.size() not_eq dimS )
+  if(upper.size() != dimS or lower.size() != dimS )
     die("size mismatch");
 
   // For consistency with action space we ask user for a rough box of state vars
@@ -272,10 +272,12 @@ void Communicator::_sendState(const int agentID, const episodeStatus status,
   if(m_Sockets.server == -1)
   {
     assert(m_Worker);
-    m_Worker->stepWorkerToMaster( * agents[agentID].get() );
+    std::cout << "m_Sockets.server == -1" << std::endl;
+    m_Worker->stepWorkerToMaster( *agents[agentID].get() );
   }
   else
   {
+    std::cout << "m_Sockets.server != -1" << std::endl;
     agents[agentID]->packStateMsg(m_CommBuffers[agentID]->dataStateBuf);
     SOCKET_Bsend(m_CommBuffers[agentID]->dataStateBuf,
                  m_CommBuffers[agentID]->sizeStateMsg,

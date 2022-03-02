@@ -118,7 +118,7 @@ void Learner_pytorch::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     debugL("Sample the replay memory and compute the gradients");
@@ -140,7 +140,7 @@ void Learner_pytorch::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     // if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     // debugL("Apply SGD update after reduction of gradients");
@@ -163,7 +163,7 @@ void Learner_pytorch::spawnTrainTasks()
 
   profiler->stop_start("SAMP");
 
-  const uint64_t nThr = distrib.nThreads, CS =  batchSize / nThr;
+  const uint64_t nThr = m_ExecutionInfo.nThreads, CS =  batchSize / nThr;
   const MiniBatch MB = data->sampleMinibatch(batchSize, nGradSteps() );
 
   // IMPORTANT !

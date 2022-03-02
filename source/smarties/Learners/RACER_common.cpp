@@ -85,7 +85,7 @@ void RACER<Advantage_t, Policy_t, Action_t>::setupNet()
   if(networks.size()>0) {
     networks[0]->rename("net"); // not preprocessing, is is the main&only net
   } else {
-    networks.push_back(new Approximator("net", settings, distrib, data.get()));
+    networks.push_back(new Approximator("net", settings, m_ExecutionInfo, data.get()));
   }
 
   networks[0]->buildFromSettings(nouts);

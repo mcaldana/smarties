@@ -18,7 +18,7 @@ namespace smarties
 class Launcher: public Communicator
 {
 protected:
-  ExecutionInfo & distrib;
+  ExecutionInfo & m_ExecutionInfo;
 
   std::vector<std::string> argsFiles;
   std::vector<uint64_t> argFilesStepsLimits;

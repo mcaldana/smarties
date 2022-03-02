@@ -39,7 +39,7 @@ selectAction(const MiniBatch& MB, Agent& agent)
   // if explNoise is 0, we just act according to policy
   // since explNoise is initial value of diagonal std vectors
   // this should only be used for evaluating a learned policy
-  auto action = pol.selectAction(agent, distrib.bTrain);
+  auto action = pol.selectAction(agent, m_ExecutionInfo.bTrain);
   const Advantage_t adv(adv_start, aInfo, output, &pol);
   const Real V = scaleNet2V(output[VsID]);
   MB.appendValues(V, V + adv.computeAdvantage(action));
@@ -81,7 +81,7 @@ void RACER<Advantage_t, Policy_t, Action_t>::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -97,7 +97,7 @@ void RACER<Advantage_t, Policy_t, Action_t>::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();

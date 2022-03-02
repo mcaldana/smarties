@@ -23,7 +23,7 @@ static inline void sendRecvVectorFunc(
 {
   uint64_t vecSize = vec.size();
   sendRecvFunc(&vecSize, 1 * sizeof(uint64_t) );
-  if(vec.size() not_eq vecSize) vec.resize(vecSize);
+  if(vec.size() != vecSize) vec.resize(vecSize);
   if(vecSize == 0) return;
   //else assert( vecSize == (uint64_t) vec.size() );
   std::vector<int> intvec(vec.begin(), vec.end());
@@ -38,7 +38,7 @@ static inline void sendRecvVectorFunc(
 {
   uint64_t vecSize = vec.size();
   sendRecvFunc(&vecSize, 1 * sizeof(uint64_t) );
-  if(vec.size() not_eq vecSize) vec.resize(vecSize);
+  if(vec.size() != vecSize) vec.resize(vecSize);
   if(vecSize == 0) return;
   //else assert( vecSize == (uint64_t) vec.size() );
   sendRecvFunc( vec.data(), vecSize * sizeof(T) );

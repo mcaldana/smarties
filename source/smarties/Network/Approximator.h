@@ -57,8 +57,8 @@ struct Approximator
     else return net->getnOutputs();
   }
   uint64_t nLayers() const {
-    if (net not_eq nullptr) return net->nLayers;
-    else if (build not_eq nullptr) return build->layers.size();
+    if (net != nullptr) return net->nLayers;
+    else if (build != nullptr) return build->layers.size();
     else return 0;
   }
   void setNgradSteps(const uint64_t iter) const { opt->nStep = iter; }
@@ -133,9 +133,9 @@ struct Approximator
     if(ind>0) assert(t>0);
     if(ind>0 && not C.activation(t-1, 0)->written) {
       const auto myInputType = C.addedInputType(0);
-      if(myInputType not_eq NONE) C.addedInputType(0) = ACTION;
+      if(myInputType != NONE) C.addedInputType(0) = ACTION;
       forward(contextID, t-1, 0);
-      if(myInputType not_eq NONE) C.addedInputType(0) = myInputType;
+      if(myInputType != NONE) C.addedInputType(0) = myInputType;
     }
     //if(ind>0 && not C.net(t, samp)->written) forward(C, t-1, samp);
     const Activation* const recur = ind>0? C.activation(t-1, 0) : nullptr;
@@ -151,7 +151,7 @@ struct Approximator
 
     if(C.addedInputType(sampID) == NETWORK)
     {
-      assert(auxInputNet not_eq nullptr);
+      assert(auxInputNet != nullptr);
       Rvec addedinp = auxInputNet->forward(contextID, t, sampID);
       assert( (int64_t) addedinp.size() >= m_auxInputSize);
       addedinp.resize(m_auxInputSize);
@@ -346,9 +346,9 @@ struct Approximator
 
 private:
   const HyperParameters & settings;
-  const ExecutionInfo & distrib;
+  const ExecutionInfo & m_ExecutionInfo;
   std::string name;
-  const uint64_t   nAgents =  distrib.nAgents,    nThreads =  distrib.nThreads;
+  const uint64_t   nAgents =  m_ExecutionInfo.nAgents,    nThreads =  m_ExecutionInfo.nThreads;
   const uint64_t ESpopSize = settings.ESpopSize, batchSize = settings.batchSize;
   const MemoryBuffer* const replay;
   const Approximator* const preprocessing;

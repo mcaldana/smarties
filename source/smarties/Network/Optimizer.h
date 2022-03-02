@@ -19,13 +19,13 @@ namespace smarties
 class Optimizer
 {
 protected:
-  const ExecutionInfo & distrib;
+  const ExecutionInfo & m_ExecutionInfo;
   const HyperParameters & settings;
-  const MPI_Comm learnersComm = MPICommDup(distrib.learners_train_comm);
+  const MPI_Comm learnersComm = MPICommDup(m_ExecutionInfo.learners_train_comm);
   const uint64_t learn_size = MPICommSize(learnersComm);
   const uint64_t learn_rank = MPICommRank(learnersComm);
   const uint64_t populationSize = settings.ESpopSize;
-  const uint64_t nThreads = distrib.nThreads;
+  const uint64_t nThreads = m_ExecutionInfo.nThreads;
 
   const std::shared_ptr<Parameters> weights;
   const std::vector<std::shared_ptr<Parameters>> sampled_weights =
@@ -96,7 +96,7 @@ protected:
   const std::shared_ptr<Parameters> gradSum = weights->allocateEmptyAlike();
   const std::shared_ptr<Parameters> _1stMom = weights->allocateEmptyAlike();
   const std::shared_ptr<Parameters> _2ndMom = weights->allocateEmptyAlike();
-  std::vector<std::mt19937>& generators = distrib.generators;
+  std::vector<std::mt19937>& generators = m_ExecutionInfo.generators;
   MPI_Request paramRequest = MPI_REQUEST_NULL;
 
 public:

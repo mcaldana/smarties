@@ -222,7 +222,7 @@ void ExecutionInfo::figureOutWorkersPattern()
   if(not forkableApplication &&     bThereAreWorkerProcesses) {
     // then each worker rank runs its own environment
     workerProcessesPerEnv = std::max(workerProcessesPerEnv, (uint64_t) 1);
-    if(nWorkers % workerProcessesPerEnv not_eq 0)
+    if(nWorkers % workerProcessesPerEnv != 0)
       die("Mismatch between worker processes and number of ranks requested to run env application.");
     nEnvironments = nWorkers;
   }
@@ -314,7 +314,7 @@ void ExecutionInfo::figureOutWorkersPattern()
 
         if(workerProcessesPerEnv > 0)
         {
-          if( (innerWorkSize-1) % workerProcessesPerEnv not_eq 0)
+          if( (innerWorkSize-1) % workerProcessesPerEnv != 0)
             _die("Number of worker ranks per master (%u) must be a multiple of "
             "the nr. of ranks that the environment app requires to run (%u).\n",
             innerWorkSize-1, workerProcessesPerEnv);
@@ -352,7 +352,7 @@ void ExecutionInfo::figureOutWorkersPattern()
     bIsMaster = false;
     learnersOnWorkers = true;
     if(nWorkers <= 0) die("Error in computation of world_size");
-    if(nEnvironments not_eq nWorkers)
+    if(nEnvironments != nWorkers)
       die("Detected 0 masters : this only works if each worker "
           "also serially runs its own environment.");
     nOwnedEnvironments  = 1;
@@ -362,7 +362,7 @@ void ExecutionInfo::figureOutWorkersPattern()
 
     const uint64_t totalWorkRank = MPICommRank(learners_train_comm);
     const uint64_t totalWorkSize = MPICommSize(learners_train_comm);
-    if( (totalWorkSize-1) % workerProcessesPerEnv not_eq 0) {
+    if( (totalWorkSize-1) % workerProcessesPerEnv != 0) {
       _die("Number of worker ranks per master (%u) must be a multiple of "
       "the nr. of ranks that the environment app requires to run (%u).\n",
       totalWorkSize-1, workerProcessesPerEnv);

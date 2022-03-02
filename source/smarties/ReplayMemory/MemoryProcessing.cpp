@@ -95,7 +95,7 @@ void updateRewardsStats(MemoryBuffer& RM, const bool bInit, const Real rRateFac)
 {
   // Update the second order moment of the rewards and means and stdev of states
   // contained in the memory buffer. Used for rescaling and numerical safety.
-  if(not RM.distrib.bTrain) return; //if not training, keep the stored values
+  if(!RM.distrib.bTrain) return; //if not training, keep the stored values
 
   MDPdescriptor & MDP = RM.MDP;
   const uint64_t setSize = RM.nStoredEps(), dimS = MDP.dimStateObserved;
@@ -196,7 +196,7 @@ void updateTrainingStatistics(MemoryBuffer& RM)
   RM.CinvRet = 1 / RM.CmaxRet;
   if(RM.CmaxRet <= 1 and C > 0) die("Unallowed ReF-ER annealing values.");
 
-  const bool bNeedsReturnEst = RM.settings.returnsEstimator not_eq "none";
+  const bool bNeedsReturnEst = RM.settings.returnsEstimator != "none";
   const returnsEstimator_f returnsCompute = createReturnEstimator(RM);
 
   uint64_t nOffPol = 0, nRetUpdates = 0;

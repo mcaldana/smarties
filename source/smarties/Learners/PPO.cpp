@@ -96,7 +96,7 @@ void PPO<Policy_t, Action_t>::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -111,7 +111,7 @@ void PPO<Policy_t, Action_t>::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();

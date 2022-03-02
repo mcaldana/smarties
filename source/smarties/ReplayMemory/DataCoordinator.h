@@ -21,7 +21,7 @@ class DataCoordinator
 {
   MemoryBuffer* const replay;
   ParameterBlob & params;
-  const ExecutionInfo & distrib = replay->distrib;
+  const ExecutionInfo & m_ExecutionInfo = replay->distrib;
   const MDPdescriptor & MDP = replay->MDP;
   const uint64_t MDPID = replay->MDP.localID;
 

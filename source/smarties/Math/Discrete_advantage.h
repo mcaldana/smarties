@@ -55,7 +55,7 @@ public:
   }
   void grad(const uint64_t act, const Real Qer, Rvec&netGradient) const
   {
-   if(policy not_eq nullptr)
+   if(policy != nullptr)
      for (uint64_t j=0; j<nA; ++j)
        netGradient[start_adv+j] = Qer*((j==act ? 1 : 0) - policy->probs[j]);
    else
@@ -68,7 +68,7 @@ public:
   }
   Real computeAdvantage(const uint64_t action) const
   {
-   if(policy not_eq nullptr) //subtract expectation from advantage of action
+   if(policy != nullptr) //subtract expectation from advantage of action
      return advantages[action] - expectedAdvantage();
    else return advantages[action];
   }
@@ -87,7 +87,7 @@ public:
 
   Real advantageVariance() const
   {
-   assert(policy not_eq nullptr);
+   assert(policy != nullptr);
    if(policy == nullptr) return 0;
    const Real base = expectedAdvantage();
    Real ret = 0;

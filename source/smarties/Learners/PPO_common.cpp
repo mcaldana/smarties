@@ -51,7 +51,7 @@ void PPO<Policy_t, Action_t>::setupNet()
   const Approximator* const encoder = bCreatedEncorder? networks[0] : nullptr;
 
   networks.push_back(
-    new Approximator("policy", settings, distrib, data.get(), encoder)
+    new Approximator("policy", settings, m_ExecutionInfo, data.get(), encoder)
   );
   actor = networks.back();
   //actor->setBlockGradsToPreprocessing();
@@ -64,7 +64,7 @@ void PPO<Policy_t, Action_t>::setupNet()
   actor->initializeNetwork();
 
   networks.push_back(
-    new Approximator("critic", settings, distrib, data.get(), encoder)
+    new Approximator("critic", settings, m_ExecutionInfo, data.get(), encoder)
   );
   critc = networks.back();
   // update settings that are going to be read by critic:

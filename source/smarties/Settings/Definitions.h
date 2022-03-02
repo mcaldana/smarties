@@ -18,8 +18,6 @@
 namespace smarties
 {
 
-using uint64_t = size_t;
-using int64_t = ptrdiff_t;
 ////////////////////////////////////////////////////////////////////////////////
 #if 1 // MAIN CODE PRECISION
 using Real = double;

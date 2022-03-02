@@ -69,12 +69,12 @@ public:
 
   void Irecv(void*const buffer, const uint64_t size, const int rank,
     const int tag, MPI_Request& req) const {
-    MPI(Irecv, buffer, size, MPI_BYTE, rank, tag, master_workers_comm, & req);
+    MPI(Irecv, buffer, size, MPI_BYTE, rank, tag, m_MasterWorkersComm, &req);
   }
 
   void  Send(void*const buffer, const uint64_t size, const int rank,
     const int tag) const {
-    MPI(Send, buffer, size, MPI_BYTE, rank, tag, master_workers_comm);
+    MPI(Send, buffer, size, MPI_BYTE, rank, tag, m_MasterWorkersComm);
   }
 
   int TestComm(MPI_Request& request) const {

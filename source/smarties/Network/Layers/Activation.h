@@ -49,9 +49,9 @@ struct Activation
   }
 
   ~Activation() {
-    for(auto& p : suminps) if(p not_eq nullptr) free(p);
-    for(auto& p : outvals) if(p not_eq nullptr) free(p);
-    for(auto& p : errvals) if(p not_eq nullptr) free(p);
+    for(auto& p : suminps) if(p != nullptr) free(p);
+    for(auto& p : outvals) if(p != nullptr) free(p);
+    for(auto& p : errvals) if(p != nullptr) free(p);
   }
 
   template<typename T>
@@ -150,7 +150,7 @@ struct Activation
   void clearOutput() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(outvals[i] not_eq nullptr);
+      assert(outvals[i] != nullptr);
       memset( outvals[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }
@@ -158,7 +158,7 @@ struct Activation
   void clearErrors() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(errvals[i] not_eq nullptr);
+      assert(errvals[i] != nullptr);
       memset( errvals[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }
@@ -166,7 +166,7 @@ struct Activation
   void clearInputs() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(suminps[i] not_eq nullptr);
+      assert(suminps[i] != nullptr);
       memset( suminps[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }

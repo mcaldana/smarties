@@ -22,7 +22,7 @@ namespace smarties
 {
 
 Builder::Builder(const HyperParameters& S, const ExecutionInfo& D)
-  : distrib(D), settings(S) { }
+  : m_ExecutionInfo(D), settings(S) { }
 
 void Builder::addInput(const uint64_t size)
 {
@@ -122,34 +122,34 @@ void Builder::build(const bool isInputNet)
   bBuilt = true;
 
   nLayers = layers.size();
-  unsigned long lsize = distrib.learners_train_comm == MPI_COMM_NULL? 1 :
-                        MPICommSize(distrib.learners_train_comm);
-  const MPI_Comm & tmpComm = distrib.learnersOnWorkers ? distrib.world_comm :
-                             distrib.learners_train_comm;
+  unsigned long lsize = m_ExecutionInfo.learners_train_comm == MPI_COMM_NULL? 1 :
+                        MPICommSize(m_ExecutionInfo.learners_train_comm);
+  const MPI_Comm & tmpComm = m_ExecutionInfo.learnersOnWorkers ? m_ExecutionInfo.world_comm :
+                             m_ExecutionInfo.learners_train_comm;
   MPI_Bcast( &lsize, 1, MPI_UNSIGNED_LONG, 0, tmpComm);
 
   std::shared_ptr<Parameters> weights = Network::allocParameters(layers, lsize);
 
-  std::mt19937& gen = distrib.generators[0];
+  std::mt19937& gen = m_ExecutionInfo.generators[0];
   // Initialize weights
   for(const auto & l : layers)
     l->initialize(gen, weights.get(),
       l->bOutput && not isInputNet ? settings.outWeightsPrefac : 1);
 
-  if(MPICommRank(distrib.world_comm) == 0)
+  if(MPICommRank(m_ExecutionInfo.world_comm) == 0)
     for(const auto & l : layers) printf( "%s", l->printSpecs().c_str() );
 
   // Make sure that all ranks have the same weights (copy from rank 0)
-  if(distrib.learnersOnWorkers) weights->broadcast(distrib.world_comm);
-  else weights->broadcast(distrib.learners_train_comm);
+  if(m_ExecutionInfo.learnersOnWorkers) weights->broadcast(m_ExecutionInfo.world_comm);
+  else weights->broadcast(m_ExecutionInfo.learners_train_comm);
 
   // Initialize network workspace to check that all is ok
   const std::unique_ptr<Activation> test = Network::allocActivation(layers);
-  if(test->nInputs not_eq (int) nInputs)
+  if(test->nInputs != (int) nInputs)
     _die("Mismatch between Builder's computed inputs:%u and Activation's:%u",
          nInputs, test->nInputs);
 
-  if(test->nOutputs not_eq (int) nOutputs) {
+  if(test->nOutputs != (int) nOutputs) {
     _warn("Mismatch between Builder's computed outputs:%u and Activation's:%u. "
           "Overruled Builder: probable cause is that user net did not specify "
           "which layers are output. If multiple output layers expect trouble\n",
@@ -157,16 +157,16 @@ void Builder::build(const bool isInputNet)
     nOutputs = test->nOutputs;
   }
 
-  threadGrads = allocManyParams(weights, distrib.nThreads);
+  threadGrads = allocManyParams(weights, m_ExecutionInfo.nThreads);
 
   net = std::make_shared<Network>(nInputs, nOutputs, layers, weights);
   // ownership of layers passed onto network, builder should have an empty vec:
   assert(layers.size() == 0);
 
   if(settings.ESpopSize>1)
-    opt = std::make_shared<CMA_Optimizer>(settings,distrib,weights);
+    opt = std::make_shared<CMA_Optimizer>(settings,m_ExecutionInfo,weights);
   else
-    opt = std::make_shared<AdamOptimizer>(settings,distrib,weights,threadGrads);
+    opt = std::make_shared<AdamOptimizer>(settings,m_ExecutionInfo,weights,threadGrads);
 }
 
 void Builder::addConv2d(const Conv2D_Descriptor& descr, bool bOut, uint64_t iLink)
@@ -177,7 +177,7 @@ void Builder::addConv2d(const Conv2D_Descriptor& descr, bool bOut, uint64_t iLin
     die("Missing input layer.");
 
   const uint64_t inpSize = descr.inpFeatures * descr.inpY * descr.inpX;
-  if( layers[ID-iLink]->nOutputs() not_eq inpSize )
+  if( layers[ID-iLink]->nOutputs() != inpSize )
     _die("Mismatch between input size (%d) and previous layer size (%d).",
       inpSize, layers.back()->nOutputs() );
 

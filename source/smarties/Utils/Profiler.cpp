@@ -140,7 +140,7 @@ void Profiler::stop()
 
 void Profiler::stop_start(std::string name)
 {
-  if(ongoing not_eq "") stop();
+  if(ongoing != "") stop();
   start(name);
 }
 

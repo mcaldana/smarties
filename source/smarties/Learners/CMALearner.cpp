@@ -113,7 +113,7 @@ void CMALearner<Action_t>::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
     profiler->stop();
     debugL("Gather gradient estimates from each thread and Learner MPI rank");
@@ -136,7 +136,7 @@ void CMALearner<Action_t>::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();
@@ -223,7 +223,7 @@ Learner_approximator(MDP_, S_, D_)
   if(networks.size()>0) {
     networks[0]->rename("net"); // not preprocessing, is is the main&only net
   } else {
-    networks.push_back(new Approximator("net", settings, distrib, data.get()));
+    networks.push_back(new Approximator("net", settings, m_ExecutionInfo, data.get()));
   }
   networks[0]->buildFromSettings(aInfo.dim());
   if(settings.explNoise>0) {
@@ -245,7 +245,7 @@ Learner_approximator(MDP_, S_, D_)
   if(networks.size()>0) {
     networks[0]->rename("net"); // not preprocessing, is is the main&only net
   } else {
-    networks.push_back(new Approximator("net", settings, distrib, data.get()));
+    networks.push_back(new Approximator("net", settings, m_ExecutionInfo, data.get()));
   }
   networks[0]->buildFromSettings(MDP.maxActionLabel);
   networks[0]->initializeNetwork();

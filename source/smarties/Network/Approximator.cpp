@@ -20,13 +20,13 @@ Approximator::Approximator(std::string name_,
                            const MemoryBuffer* const replay_,
                            const Approximator* const preprocessing_,
                            const Approximator* const auxInputNet_) :
-  settings(S), distrib(D), name(name_), replay(replay_),
+  settings(S), m_ExecutionInfo(D), name(name_), replay(replay_),
   preprocessing(preprocessing_), auxInputNet(auxInputNet_)
 { }
 
 Approximator::~Approximator()
 {
-  if(gradStats not_eq nullptr) delete gradStats;
+  if(gradStats != nullptr) delete gradStats;
 }
 
 void Approximator::setBlockGradsToPreprocessing()
@@ -86,13 +86,13 @@ void Approximator::initializeNetwork()
   const MDPdescriptor & MDP = replay->MDP;
   if(build->layers.back()->bOutput == false) {
     assert(build->nOutputs == 0);
-    if (MPICommSize(distrib.world_comm) == 0)
+    if (MPICommSize(m_ExecutionInfo.world_comm) == 0)
       warn("Requested net where last layer isnt output. Overridden: now it is");
     build->layers.back()->bOutput = true;
     build->nOutputs = build->layers.back()->size;
   }
 
-  if(MPICommRank(distrib.world_comm) == 0) {
+  if(MPICommRank(m_ExecutionInfo.world_comm) == 0) {
     printf("Initializing %s approximator.\nLayers composition:\n",name.c_str());
   }
 
@@ -169,7 +169,7 @@ void Approximator::initializeNetwork()
     }
   }
 
-  gradStats = new StatsTracker(net->getnOutputs(), distrib);
+  gradStats = new StatsTracker(net->getnOutputs(), m_ExecutionInfo);
 }
 
 // buildFromSettings reads from the settings file the amount of fully connected
@@ -179,12 +179,12 @@ void Approximator::initializeNetwork()
 void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes)
 {
   if (not build)
-    build = std::make_unique<Builder>(settings, distrib);
+    build = std::make_unique<Builder>(settings, m_ExecutionInfo);
 
   const MDPdescriptor & MDP = replay->MDP;
   // last chance to update size of aux input size:
   if(auxInputNet && m_auxInputSize<=0) {
-    assert(m_auxInputSize not_eq 0 && "Default is -1, what set it to 0?");
+    assert(m_auxInputSize != 0 && "Default is -1, what set it to 0?");
     m_auxInputSize = auxInputNet->nOutputs();
   }
   //build.stackSimple( inputSize, outputSizes );
@@ -205,7 +205,7 @@ void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes)
   }
   else
   {
-    uint64_t inputSize = preprocessing not_eq nullptr ? preprocessing->nOutputs()
+    uint64_t inputSize = preprocessing != nullptr ? preprocessing->nOutputs()
                                   : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
     if(m_auxInputSize>0) inputSize += m_auxInputSize;
 
@@ -236,7 +236,7 @@ void Approximator::buildPreprocessing(const std::vector<uint64_t> preprocLayers)
     die("Preprocessing layers were created for a network type that does not "
         "support being together with preprocessing layers");
 
-  build = std::make_unique<Builder>(settings, distrib);
+  build = std::make_unique<Builder>(settings, m_ExecutionInfo);
 
   const MDPdescriptor & MDP = replay->MDP;
   const uint64_t dimS = preprocessing? preprocessing->nOutputs()

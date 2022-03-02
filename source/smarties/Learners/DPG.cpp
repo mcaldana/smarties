@@ -36,7 +36,7 @@ void DPG::Train(const MiniBatch& MB, const uint64_t wID, const uint64_t bID) con
   const Rvec pval = critc->forward(bID, t, -1); //net alloc, with target wegiths
 
   Real target = 0;
-  if(settings.returnsEstimator not_eq "none") {
+  if(settings.returnsEstimator != "none") {
     if( MB.isTruncated(bID, t+1) ) {
       actor->forward(bID, t+1);
       critc->setAddedInputType(NETWORK, bID, t+1); // retrace : skip tgt weights
@@ -139,7 +139,7 @@ void DPG::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -157,7 +157,7 @@ void DPG::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();
@@ -182,7 +182,7 @@ DPG::DPG(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& D):
   if(bCreatedEncorder) encoder->initializeNetwork();
 
   networks.push_back(
-    new Approximator("policy", settings, distrib, data.get(), encoder)
+    new Approximator("policy", settings, m_ExecutionInfo, data.get(), encoder)
   );
   actor = networks.back();
   actor->buildFromSettings(nA);
@@ -192,7 +192,7 @@ DPG::DPG(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& D):
   actor->initializeNetwork();
 
   networks.push_back(
-    new Approximator("critic", settings, distrib, data.get(), encoder, actor)
+    new Approximator("critic", settings, m_ExecutionInfo, data.get(), encoder, actor)
   );
   critc = networks.back();
   critc->setAddedInput(NETWORK, nA);

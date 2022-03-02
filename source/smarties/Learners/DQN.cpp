@@ -50,7 +50,7 @@ DQN::DQN(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& D):
   if(networks.size()>0) {
     networks[0]->rename("Q"); // not preprocessing, is is the main&only net
   } else {
-    networks.push_back(new Approximator("Q", settings, distrib, data.get()));
+    networks.push_back(new Approximator("Q", settings, m_ExecutionInfo, data.get()));
   }
   networks[0]->setUseTargetNetworks();
   networks[0]->buildFromSettings(nA);
@@ -116,7 +116,7 @@ void DQN::setupTasks(TaskQueue& tasks)
   auto stepMain = [&]()
   {
     // conditions to begin the update-compute task
-    if ( algoSubStepID not_eq 0 ) return; // some other op is in progress
+    if ( algoSubStepID != 0 ) return; // some other op is in progress
     if ( blockGradientUpdates() ) return; // waiting for enough data
 
     profiler->stop();
@@ -134,7 +134,7 @@ void DQN::setupTasks(TaskQueue& tasks)
   // these are all the tasks I can do before the optimizer does an allreduce
   auto stepComplete = [&]()
   {
-    if ( algoSubStepID not_eq 1 ) return;
+    if ( algoSubStepID != 1 ) return;
     if ( networks[0]->ready2ApplyUpdate() == false ) return;
 
     profiler->stop();

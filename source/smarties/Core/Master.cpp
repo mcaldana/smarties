@@ -21,10 +21,10 @@ Master<MasterMPI, MPI_Request>(D) { }
 
 #ifndef NDEBUG
 inline static bool isUnfinished(const MPI_Request& req) {
-  return req not_eq MPI_REQUEST_NULL;
+  return req != MPI_REQUEST_NULL;
 }
 inline static bool isUnfinished(const SOCKET_REQ& req) {
-  return req.todo not_eq 0;
+  return req.todo != 0;
 }
 #endif
 
@@ -36,8 +36,8 @@ Master<CommType, Request_t>::Master(ExecutionInfo&D) : Worker(D) {}
 
 void MasterSockets::run(const environment_callback_t& callback)
 {
-  assert(distrib.nForkedProcesses2spawn > 0);
-  const bool isChild = COMM->forkApplication(callback);
+  assert(m_ExecutionInfo.nForkedProcesses2spawn > 0);
+  const bool isChild = m_Launcher->forkApplication(callback);
   if(isChild) return;
   Master<MasterSockets, SOCKET_REQ>::run();
 }
@@ -66,16 +66,16 @@ template<typename CommType, typename Request_t>
 void Master<CommType, Request_t>::spawnCallsHandlers()
 {
   // if workers host learning algos then no need to supply actions
-  if(distrib.learnersOnWorkers && distrib.nForkedProcesses2spawn < 1) return;
+  if(m_ExecutionInfo.learnersOnWorkers && m_ExecutionInfo.nForkedProcesses2spawn < 1) return;
 
-  #pragma omp parallel num_threads(distrib.nThreads)
+  #pragma omp parallel num_threads(m_ExecutionInfo.nThreads)
   {
     std::vector<uint64_t> shareWorkers;
     const uint64_t thrN = omp_get_num_threads();
     const uint64_t thrID = thrN-1 - omp_get_thread_num(); // thrN-1, thrN-2, ..., 0
-    const uint64_t workerShare = std::ceil(nCallingEnvs / (double) thrN);
+    const uint64_t workerShare = std::ceil(m_nCallingEnvs / (double) thrN);
     const uint64_t workerBeg = thrID * workerShare;
-    const uint64_t workerEnd = std::min(nCallingEnvs, (thrID+1)*workerShare);
+    const uint64_t workerEnd = std::min(m_nCallingEnvs, (thrID+1)*workerShare);
     for(uint64_t i=workerBeg; i<workerEnd; ++i) shareWorkers.push_back(i);
     #pragma omp critical
     if (shareWorkers.size())
@@ -121,7 +121,7 @@ void Master<CommType,Request_t>::waitForStateActionCallers(const std::vector<uin
     // communication handle is rank_of_worker := workerID + 1 (master is 0)
     const int completed = interface()->TestComm(reqs[j]);
     //Learners lock workers if they have enough data to advance step
-    while (bTrain && completed && learnersBlockingDataAcquisition()) {
+    while (m_bTrain && completed && learnersBlockingDataAcquisition()) {
       if(bExit.load()>0) { // exit in case of MPI world reached max num steps
         sendKillMsgs(j);
         return;

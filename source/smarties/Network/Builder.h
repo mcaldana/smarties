@@ -60,7 +60,7 @@ public:
   // Once this is called number of layers or weights CANNOT be modified.
   void build(const bool isInputNet = false);
 
-  const ExecutionInfo & distrib;
+  const ExecutionInfo & m_ExecutionInfo;
   const HyperParameters & settings;
   uint64_t nInputs=0, nOutputs=0, nLayers=0;
 

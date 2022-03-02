@@ -84,7 +84,7 @@ class MGULayer: public Layer
       }
     }
 
-    if(prev not_eq nullptr) // if not at first time step
+    if(prev != nullptr) // if not at first time step
     {
       // forget = = sigm [ Wfr prevOutput + Wff inputs + b ]
       const nnReal* const inputs = prev->Y(ID);
@@ -141,7 +141,7 @@ class MGULayer: public Layer
       dLdS[o] = dLdO[o] * forget[o] * (1-state[o]*state[o]);
 
     // 2) dLdFprevOut = Wsr * dLdS
-    if(prev not_eq nullptr)
+    if(prev != nullptr)
     {
       const nnReal*const Wsr = para->W(ID) + (2*nCells)*nInputs + nCells;
       #ifdef USE_OMPSIMD_BLAS
@@ -159,7 +159,7 @@ class MGULayer: public Layer
                 forget[o] * (1-forget[o]);
 
     // 4) dLdprevOut = (1-forget)*dLdO + dLdFprevOut*forget + Wfr*dFdL
-    if(prev not_eq nullptr)
+    if(prev != nullptr)
     {
       #pragma omp simd aligned(dLdprevOut,forget,dLdO,dLdFprevOut : VEC_WIDTH)
       for(uint64_t o=0; o<nCells; ++o) // first two terms of 4) are elt-wise:
@@ -217,7 +217,7 @@ class MGULayer: public Layer
       }
     }
 
-    if(prev not_eq nullptr)
+    if(prev != nullptr)
     {
       for(uint64_t i=0; i<nCells; ++i) {
         nnReal* const G = grad->W(ID) + 2*nCells * (nInputs + i);

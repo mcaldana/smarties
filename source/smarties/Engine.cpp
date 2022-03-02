@@ -142,9 +142,11 @@ void Engine::run(const std::function<void(Communicator*const,
   if(m_ExecutionInfo->bIsMaster)
   {
     if(m_ExecutionInfo->nForkedProcesses2spawn > 0) {
+      std::cout << "Using MasterSockets" << std::endl;
       MasterSockets process(*m_ExecutionInfo);
       process.run(callback);
     } else {
+      std::cout << "Using MasterMPI" << std::endl;
       MasterMPI process(*m_ExecutionInfo);
       process.run();
     }

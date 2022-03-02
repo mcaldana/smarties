@@ -234,7 +234,7 @@ int CMA_Optimizer::restart(const NetLoadF_t& loadFunc, const std::string fname)
 {
   char currDirectory[512];
   getcwd(currDirectory, 512);
-  chdir(distrib.initial_runDir);
+  chdir(m_ExecutionInfo.initial_runDir);
 
   int ret = loadFunc(weights.get(), fname+"_weights");
   loadFunc(pathCov.get(), fname+"_pathCov");
@@ -264,7 +264,7 @@ void CMA_Optimizer::startAllGather(const uint64_t ID)
 {
   if( learn_size < 2 ) return;
 
-  if(weightsMPIrequests[ID] not_eq MPI_REQUEST_NULL) {
+  if(weightsMPIrequests[ID] != MPI_REQUEST_NULL) {
     MPI(Wait, &weightsMPIrequests[ID], MPI_STATUS_IGNORE);
   }
 

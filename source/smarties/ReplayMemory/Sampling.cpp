@@ -59,7 +59,7 @@ void Sample_uniform::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& o
     if (nSeqs >= 2*nBatch)
     {
       std::vector<uint64_t>::iterator it = seq.begin();
-      while(it not_eq seq.end())
+      while(it != seq.end())
       {
         std::generate(it, seq.end(), [&]() { return distSeq(gens[0]); } );
         std::sort( seq.begin(), seq.end() );
@@ -85,7 +85,7 @@ void Sample_uniform::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& o
     std::uniform_int_distribution<uint64_t> distObs(0, nData-1);
     std::vector<uint64_t> ret(nBatch);
     std::vector<uint64_t>::iterator it = ret.begin();
-    while(it not_eq ret.end())
+    while(it != ret.end())
     {
       std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
       std::sort(ret.begin(), ret.end());
@@ -150,14 +150,14 @@ void TSample_impRank::prepare()
 
 void TSample_impRank::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
-  if(seq.size() not_eq obs.size()) die(" ");
+  if(seq.size() != obs.size()) die(" ");
 
   // Drawing of samples is either uniform (each sample has same prob)
   // or based on importance sampling. The latter is TODO
   const long nSeqs = nEpisodes();
   std::vector<uint64_t> ret(seq.size());
   std::vector<uint64_t>::iterator it = ret.begin();
-  while(it not_eq ret.end())
+  while(it != ret.end())
   {
     std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
     std::sort(ret.begin(), ret.end());
@@ -206,14 +206,14 @@ void TSample_impErr::prepare()
 }
 void TSample_impErr::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
-  if(seq.size() not_eq obs.size()) die(" ");
+  if(seq.size() != obs.size()) die(" ");
 
   // Drawing of samples is either uniform (each sample has same prob)
   // or based on importance sampling. The latter is TODO
   const long nSeqs = nEpisodes();
   std::vector<uint64_t> ret(seq.size());
   std::vector<uint64_t>::iterator it = ret.begin();
-  while(it not_eq ret.end())
+  while(it != ret.end())
   {
     std::generate(it, ret.end(), [&]() { return distObs(gens[0]); } );
     std::sort(ret.begin(), ret.end());
@@ -254,13 +254,13 @@ void Sample_impSeq::prepare()
 }
 void Sample_impSeq::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& obs)
 {
-  if(seq.size() not_eq obs.size()) die(" ");
+  if(seq.size() != obs.size()) die(" ");
   const uint64_t nBatch = obs.size();
 
   if(bSampleEpisodes)
   {
     std::vector<uint64_t>::iterator it = seq.begin();
-    while(it not_eq seq.end())
+    while(it != seq.end())
     {
       std::generate(it, seq.end(), [&]() { return distObs(gens[0]); } );
       std::sort( seq.begin(), seq.end() );
@@ -278,7 +278,7 @@ void Sample_impSeq::sample(std::vector<uint64_t>& seq, std::vector<uint64_t>& ob
     std::vector<std::pair<uint64_t, uint64_t>> S (nBatch);
 
     std::vector<std::pair<uint64_t, uint64_t>>::iterator it = S.begin();
-    while(it not_eq S.end())
+    while(it != S.end())
     {
       std::generate(it, S.end(), [&] () {
          const uint64_t _s = distObs(gens[0]);

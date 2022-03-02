@@ -144,22 +144,22 @@ struct ThreadContext
   }
   int64_t mapTime2Ind(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->mapTime2Ind(batchIndex, t);
   }
   int64_t mapInd2Time(const int64_t k) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->mapInd2Time(batchIndex, k);
   }
   const NNvec& getState(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->state(batchIndex, t);
   }
   const Rvec& getAction(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->action(batchIndex, t);
   }
 };
@@ -253,28 +253,28 @@ struct AgentContext
   }
   int64_t mapTime2Ind(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->mapTime2Ind(0, t);
   }
   int64_t mapInd2Time(const int64_t k) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->mapInd2Time(0, k);
   }
   const NNvec& getState(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->state(0, t);
   }
   const Rvec& getAction(const int64_t t) const
   {
-    assert(batch not_eq nullptr);
+    assert(batch != nullptr);
     return batch->action(0, t);
   }
   const Episode* episode() const
   {
-    assert(batch not_eq nullptr);
-    assert(batch->episodes.size() == 1 && batch->episodes[0] not_eq nullptr);
+    assert(batch != nullptr);
+    assert(batch->episodes.size() == 1 && batch->episodes[0] != nullptr);
     return batch->episodes[0];
   }
 };

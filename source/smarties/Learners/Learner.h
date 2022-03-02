@@ -26,15 +26,15 @@ class Learner
 {
 protected:
   uint64_t freqPrint = 1000;
-  ExecutionInfo & distrib;
+  ExecutionInfo & m_ExecutionInfo;
   HyperParameters settings;
   MDPdescriptor & MDP;
 
 public:
-  const MPI_Comm learnersComm = distrib.learners_train_comm;
+  const MPI_Comm learnersComm = m_ExecutionInfo.learners_train_comm;
   const uint64_t learn_rank = MPICommRank(learnersComm);
   const uint64_t learn_size = MPICommSize(learnersComm);
-  const uint64_t nThreads = distrib.nThreads, nAgents = distrib.nAgents;
+  const uint64_t nThreads = m_ExecutionInfo.nThreads, nAgents = m_ExecutionInfo.nAgents;
 
   const uint64_t policyVecDim = MDP.policyVecDim;
   const ActionInfo aInfo = ActionInfo(MDP);
@@ -43,7 +43,7 @@ public:
   // training loop scheduling:
   const Real obsPerStep_loc = settings.obsPerStep_local;
   const long nObsB4StartTraining = settings.minTotObsNum_local;
-  const bool bTrain = distrib.bTrain;
+  const bool bTrain = m_ExecutionInfo.bTrain;
 
   // some algorithm hyper-parameters:
   const Real gamma = settings.gamma;
@@ -51,7 +51,7 @@ public:
 protected:
   int algoSubStepID = -1;
 
-  std::vector<std::mt19937>& generators = distrib.generators;
+  std::vector<std::mt19937>& generators = m_ExecutionInfo.generators;
 
   const std::unique_ptr<MemoryBuffer> data;
 

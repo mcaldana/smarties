@@ -40,7 +40,7 @@ MemoryBuffer::MemoryBuffer(MDPdescriptor& M, HyperParameters& S, ExecutionInfo& 
 
   globalCounterRdx.update({(long)0,(long)0,(long)0,(long)settings.maxTotObsNum});
 
-  if(settings.returnsEstimator not_eq "none")
+  if(settings.returnsEstimator != "none")
     printf("Returns estimation method: %s.\n", S.returnsEstimator.c_str());
 }
 
@@ -93,7 +93,7 @@ void MemoryBuffer::storeState(Agent&a)
   S.bReachedTermState = a.agentStatus == TERM;
   S.states.push_back(storedState);
   S.rewards.push_back(a.reward);
-  if( a.agentStatus not_eq INIT ) S.totR += a.reward;
+  if( a.agentStatus != INIT ) S.totR += a.reward;
   else assert(std::fabs(a.reward)<2.2e-16); //rew for init state must be 0
 }
 
@@ -109,7 +109,7 @@ void MemoryBuffer::storeAction(const Agent& a)
     return;
   }
 
-  if(a.agentStatus not_eq INIT) increaseLocalSeenSteps();
+  if(a.agentStatus != INIT) increaseLocalSeenSteps();
   S.actions.push_back( a.action );
   S.policies.push_back(a.policyVector);
 }

@@ -38,27 +38,27 @@ inline unsigned MPIworldRank() { return MPICommRank(MPI_COMM_WORLD); }
 #ifdef REQUIRE_MPI_MULTIPLE
   #define MPI(NAME, ...)                                   \
   do {                                                     \
-    /*int MPIERR =*/ MPI_ ## NAME ( __VA_ARGS__ );             \
-    /*if(MPIERR not_eq MPI_SUCCESS) {         */               \
-    /*  _warn("%s %d", #NAME, MPIERR);        */               \
-    /*  throw std::runtime_error("MPI ERROR");*/               \
-    /*}                                       */               \
-  } while(0)
-#else
-  #define MPI(NAME, ...)                                   \
-  do {                                                     \
-    int MPIERR = 0;                                        \
-    if(distrib.bAsyncMPI) {                                \
-      MPIERR = MPI_ ## NAME ( __VA_ARGS__ );               \
-    } else {                                               \
-      std::lock_guard<std::mutex> lock(distrib.mpiMutex);  \
-      MPIERR = MPI_ ## NAME ( __VA_ARGS__ );               \
-    }                                                      \
-    if(MPIERR not_eq MPI_SUCCESS) {                        \
+    int MPIERR = MPI_ ## NAME ( __VA_ARGS__ );             \
+    if(MPIERR != MPI_SUCCESS) {                            \
       _warn("%s %d", #NAME, MPIERR);                       \
-      Warnings::print_stacktrace();                        \
       throw std::runtime_error("MPI ERROR");               \
     }                                                      \
+  } while(0)
+#else
+  #define MPI(NAME, ...)                                           \
+  do {                                                             \
+    int MPIERR = 0;                                                \
+    if(m_ExecutionInfo.bAsyncMPI) {                                \
+      MPIERR = MPI_ ## NAME ( __VA_ARGS__ );                       \
+    } else {                                                       \
+      std::lock_guard<std::mutex> lock(m_ExecutionInfo.mpiMutex);  \
+      MPIERR = MPI_ ## NAME ( __VA_ARGS__ );                       \
+    }                                                              \
+    if(MPIERR != MPI_SUCCESS) {                                    \
+      _warn("%s %d", #NAME, MPIERR);                               \
+      Warnings::print_stacktrace();                                \
+      throw std::runtime_error("MPI ERROR");                       \
+    }                                                              \
   } while(0)
 #endif
 

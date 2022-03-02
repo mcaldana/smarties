@@ -20,7 +20,7 @@ template<typename T>
 DelayedReductor<T>::DelayedReductor(const ExecutionInfo& D,
                                     const std::vector<T> I) :
 mpicomm(MPICommDup(D.learners_train_comm)), arysize(I.size()),
-mpisize(MPICommSize(D.learners_train_comm)), distrib(D), return_ret(I) {}
+mpisize(MPICommSize(D.learners_train_comm)), m_ExecutionInfo(D), return_ret(I) {}
 
 
 template<typename T>
@@ -33,7 +33,7 @@ DelayedReductor<T>::~DelayedReductor()
 template<typename T>
 std::vector<T> DelayedReductor<T>::get(const bool accurate)
 {
-  if(buffRequest not_eq MPI_REQUEST_NULL) {
+  if(buffRequest != MPI_REQUEST_NULL) {
     int completed = 0;
     if(accurate) {
       completed = 1;
@@ -59,13 +59,13 @@ void DelayedReductor<T>::update(const std::vector<T> ret)
     return;
   }
 
-  if(buffRequest not_eq MPI_REQUEST_NULL) {
+  if(buffRequest != MPI_REQUEST_NULL) {
     MPI(Wait, &buffRequest, MPI_STATUS_IGNORE);
     buffRequest = MPI_REQUEST_NULL;
     return_ret = reduce_ret;
   }
   reduce_ret = ret;
-  assert(mpicomm not_eq MPI_COMM_NULL);
+  assert(mpicomm != MPI_COMM_NULL);
   assert(buffRequest == MPI_REQUEST_NULL);
   beginRDX();
 }

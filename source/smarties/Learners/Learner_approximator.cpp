@@ -26,7 +26,7 @@ Learner_approximator::Learner_approximator(MDPdescriptor& MDP_,
 Learner_approximator::~Learner_approximator()
 {
   for(auto & net : networks) {
-    if(net not_eq nullptr) {
+    if(net != nullptr) {
       delete net;
       net = nullptr;
     }
@@ -43,7 +43,7 @@ void Learner_approximator::spawnTrainTasks()
   profiler->start("SAMP");
   debugL("Sample the replay memory");
   const uint64_t batchSize=settings.batchSize_local, ESpopSize=settings.ESpopSize;
-  const uint64_t nThr = distrib.nThreads, CS =  batchSize / nThr;
+  const uint64_t nThr = m_ExecutionInfo.nThreads, CS =  batchSize / nThr;
   const MiniBatch MB = data->sampleMinibatch(batchSize, nGradSteps() );
   profiler->stop();
 
@@ -117,11 +117,11 @@ void Learner_approximator::getHeaders(std::ostringstream& buf) const
 
 void Learner_approximator::restart()
 {
-  if(distrib.restart == "none") return;
+  if(m_ExecutionInfo.restart == "none") return;
   if(!learn_rank) printf("Restarting from saved policy...\n");
 
   for(const auto & net : networks) {
-    net->restart(distrib.restart+"/"+learner_name);
+    net->restart(m_ExecutionInfo.restart+"/"+learner_name);
     net->save("restarted_"+learner_name, false);
   }
 
@@ -159,7 +159,7 @@ bool Learner_approximator::createEncoder()
     return false; // no preprocessing
 
   if(networks.size()>0) warn("some network was created before preprocessing");
-  networks.push_back(new Approximator("encodr", settings,distrib, data.get()));
+  networks.push_back(new Approximator("encodr", settings, m_ExecutionInfo, data.get()));
   networks.back()->buildPreprocessing(encoderLayers);
   assert( networks.back()->nLayers() > 1 );
   return true;
@@ -190,7 +190,7 @@ void Learner_approximator::setupDataCollectionTasks(TaskQueue& tasks)
 
 void Learner_approximator::createSharedEncoder(const uint64_t privateNum)
 {
-  if(input->net not_eq nullptr) {
+  if(input->net != nullptr) {
     delete input->opt; input->opt = nullptr;
     delete input->net; input->net = nullptr;
   }
