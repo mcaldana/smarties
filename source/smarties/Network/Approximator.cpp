@@ -7,84 +7,86 @@
 //
 
 #include "Approximator.h"
-#include "Optimizer.h"
-#include "Network.h"
 #include "../Utils/ParameterBlob.h"
+#include "Network.h"
+#include "Optimizer.h"
 
-namespace smarties
-{
+namespace smarties {
 
 Approximator::Approximator(std::string name_,
-                           const HyperParameters&S,
-                           const ExecutionInfo&D,
+                           const HyperParameters& S,
+                           const ExecutionInfo& D,
                            const MemoryBuffer* const replay_,
                            const Approximator* const preprocessing_,
-                           const Approximator* const auxInputNet_) :
-  settings(S), m_ExecutionInfo(D), name(name_), replay(replay_),
-  preprocessing(preprocessing_), auxInputNet(auxInputNet_)
-{ }
+                           const Approximator* const auxInputNet_)
+    : settings(S),
+      m_ExecutionInfo(D),
+      name(name_),
+      replay(replay_),
+      preprocessing(preprocessing_),
+      auxInputNet(auxInputNet_) {}
 
-Approximator::~Approximator()
-{
-  if(gradStats) delete gradStats;
+Approximator::~Approximator() {
+  if (gradStats)
+    delete gradStats;
 }
 
-void Approximator::setBlockGradsToPreprocessing()
-{
+void Approximator::setBlockGradsToPreprocessing() {
   m_blockInpGrad = true;
 }
 
-void Approximator::setNumberOfAddedSamples(const uint64_t nSamples)
-{
-  if(bCreatedNetwork) die("cannot modify network setup after it was built");
+void Approximator::setNumberOfAddedSamples(const uint64_t nSamples) {
+  if (bCreatedNetwork)
+    die("cannot modify network setup after it was built");
   m_numberOfAddedSamples = nSamples;
 }
 
-//specify type (and size) of auxiliary input
-void Approximator::setAddedInput(const ADDED_INPUT type, int64_t size)
-{
-  if(bCreatedNetwork) die("cannot modify network setup after it was built");
-  if(type == NONE)
-  {
-    if(size>0) die("No added input must have size 0");
-    if(auxInputNet) die("Given auxInputNet Approximator but specified no added inputyo");
+void Approximator::setAddedInput(const ADDED_INPUT type, int64_t size) {
+  if (bCreatedNetwork)
+    die("cannot modify network setup after it was built");
+  if (type == NONE) {
+    if (size > 0)
+      die("No added input must have size 0");
+    if (auxInputNet)
+      die("Given auxInputNet Approximator but specified no added inputyo");
     m_auxInputSize = 0;
-  }
-  else if (type == NETWORK)
-  {
-    if(not auxInputNet) die("auxInputNet was not given on construction");
-    if(size<0) m_auxInputSize = auxInputNet->nOutputs();
+  } else if (type == NETWORK) {
+    if (not auxInputNet)
+      die("auxInputNet was not given on construction");
+    if (size < 0)
+      m_auxInputSize = auxInputNet->nOutputs();
     else {
       m_auxInputSize = size;
-      if(auxInputNet->nOutputs() < (uint64_t) size)
+      if (auxInputNet->nOutputs() < (uint64_t)size)
         die("Approximator allows inserting the first 'size' outputs of "
             "another 'auxInputNet' Approximator as additional input (along "
             "with the state or the output of 'preprocessing' Approximator). "
             "But auxInputNet's output must be at least of size 'size'.");
     }
-  }
-  else if (type == ACTION || type == VECTOR)
-  {
-    if(size<=0) die("Did not specify size of the action/vector");
+  } else if (type == ACTION || type == VECTOR) {
+    if (size <= 0)
+      die("Did not specify size of the action/vector");
     m_auxInputSize = size;
-  } else die("type not recognized");
-  if(m_auxInputSize<0) die("m_auxInputSize cannot be negative at this point");
+  } else
+    die("type not recognized");
+  if (m_auxInputSize < 0)
+    die("m_auxInputSize cannot be negative at this point");
 }
 
 // specify whether we are using target networks
-void Approximator::setUseTargetNetworks(const int64_t targetNetworkSampleID,
-                                        const bool bTargetNetUsesTargetWeights)
-{
-  if(bCreatedNetwork) die("cannot modify network setup after it was built");
+void Approximator::setUseTargetNetworks(
+    const int64_t targetNetworkSampleID,
+    const bool bTargetNetUsesTargetWeights) {
+  if (bCreatedNetwork)
+    die("cannot modify network setup after it was built");
   m_UseTargetNetwork = true;
   m_bTargetNetUsesTargetWeights = bTargetNetUsesTargetWeights;
   m_targetNetworkSampleID = targetNetworkSampleID;
 }
 
-void Approximator::initializeNetwork()
-{
-  const MDPdescriptor & MDP = replay->MDP;
-  if(build->layers.back()->bOutput == false) {
+void Approximator::initializeNetwork() {
+  const MDPdescriptor& MDP = replay->MDP;
+  if (build->layers.back()->bOutput == false) {
     assert(build->nOutputs == 0);
     if (MPICommSize(m_ExecutionInfo.world_comm) == 0)
       warn("Requested net where last layer isnt output. Overridden: now it is");
@@ -92,8 +94,9 @@ void Approximator::initializeNetwork()
     build->nOutputs = build->layers.back()->size;
   }
 
-  if(MPICommRank(m_ExecutionInfo.world_comm) == 0) {
-    printf("Initializing %s approximator.\nLayers composition:\n",name.c_str());
+  if (MPICommRank(m_ExecutionInfo.world_comm) == 0) {
+    printf("Initializing %s approximator.\nLayers composition:\n",
+           name.c_str());
   }
 
   build->build();
@@ -104,46 +107,44 @@ void Approximator::initializeNetwork()
   delete build.release();
 
   contexts.reserve(nThreads);
-  #pragma omp parallel num_threads(nThreads)
-  for (uint64_t i=0; i<nThreads; ++i)
-  {
-    if(i == (uint64_t) omp_get_thread_num())
-      contexts.emplace_back(
-        std::make_unique<ThreadContext>(i, grads[i],
-                                        m_numberOfAddedSamples,
-                                        m_UseTargetNetwork,
-                                        m_bTargetNetUsesTargetWeights? -1 : 0));
-    #pragma omp barrier
+#pragma omp parallel num_threads(nThreads)
+  for (uint64_t i = 0; i < nThreads; ++i) {
+    if (i == (uint64_t)omp_get_thread_num())
+      contexts.emplace_back(std::make_unique<ThreadContext>(
+          i, grads[i], m_numberOfAddedSamples, m_UseTargetNetwork,
+          m_bTargetNetUsesTargetWeights ? -1 : 0));
+#pragma omp barrier
   }
 
   agentsContexts.reserve(nAgents);
-  for (uint64_t i=0; i<nAgents; ++i)
-    agentsContexts.emplace_back( std::make_unique<AgentContext>(i) );
+  for (uint64_t i = 0; i < nAgents; ++i)
+    agentsContexts.emplace_back(std::make_unique<AgentContext>(i));
 
   const auto& layers = net->layers;
-  if (m_auxInputSize>0) // If we have an auxInput (eg policy for DPG) to what
-  {                     // layer does it attach? Then we can grab gradient.
-    auxInputAttachLayer = 0; // preprocessing/state and aux in one input layer
-    for(uint64_t i=1; i<layers.size(); ++i) if(layers[i]->bInput) {
-      if(auxInputAttachLayer>0) die("too many input layers, not supported");
-      auxInputAttachLayer = i;
-    }
+  if (m_auxInputSize > 0)  // If we have an auxInput (eg policy for DPG) to what
+  {                        // layer does it attach? Then we can grab gradient.
+    auxInputAttachLayer = 0;  // preprocessing/state and aux in one input layer
+    for (uint64_t i = 1; i < layers.size(); ++i)
+      if (layers[i]->bInput) {
+        if (auxInputAttachLayer > 0)
+          die("too many input layers, not supported");
+        auxInputAttachLayer = i;
+      }
     if (auxInputAttachLayer > 0) {
-      if(layers[auxInputAttachLayer]->nOutputs() != auxInputNet->nOutputs())
+      if (layers[auxInputAttachLayer]->nOutputs() != auxInputNet->nOutputs())
         die("Size of layer to which auxInputNet does not match auxInputNet");
-      if(preprocessing && layers[0]->nOutputs() != preprocessing->nOutputs())
+      if (preprocessing && layers[0]->nOutputs() != preprocessing->nOutputs())
         die("Mismatch in preprocessing output size and network input");
-      const uint64_t stateInpSize = (1+MDP.nAppendedObs) * MDP.dimStateObserved;
-      if(not preprocessing && layers[0]->nOutputs() != stateInpSize)
+      const uint64_t stateInpSize =
+          (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+      if (not preprocessing && layers[0]->nOutputs() != stateInpSize)
         die("Mismatch in state size and network input");
     }
-    if(MDP.dimStateObserved > 0 and not layers[0]->bInput)
+    if (MDP.dimStateObserved > 0 and not layers[0]->bInput)
       die("Network does not have input layer.");
   }
 
-
-  if (m_blockInpGrad or not preprocessing)
-  {
+  if (m_blockInpGrad or not preprocessing) {
     // Skip backprop to input vector or to preprocessing if 'm_blockInpGrad'
     // Three cases of interest:
     // 1) (most common) no aux input or both both preprocessing and aux input
@@ -151,16 +152,17 @@ void Approximator::initializeNetwork()
     // 2) aux input given at layer greater than 1:  block backprop at layer 1
     // 3) aux input is layer 1 and layer 2 is joining (glue) layer, then
     //    gradient blocking is done at layer 3
-    const uint64_t skipBackPropLayerID = auxInputAttachLayer==1? 3 : 1;
-    if (auxInputAttachLayer==1) // check logic of statement 3)
+    const uint64_t skipBackPropLayerID = auxInputAttachLayer == 1 ? 3 : 1;
+    if (auxInputAttachLayer == 1)  // check logic of statement 3)
       assert(layers[1]->bInput && not net->layers[2]->bInput);
 
     if (layers.size() > skipBackPropLayerID) {
-      const uint64_t inputSize = preprocessing? preprocessing->nOutputs()
-                           : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
-      if(auxInputAttachLayer==0) // check statement 1)
+      const uint64_t inputSize =
+          preprocessing ? preprocessing->nOutputs()
+                        : (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+      if (auxInputAttachLayer == 0)  // check statement 1)
         assert(layers[1]->spanCompInpGrads == inputSize + m_auxInputSize);
-      else if(auxInputAttachLayer==1) // check statement 3)
+      else if (auxInputAttachLayer == 1)  // check statement 3)
         assert(layers[3]->spanCompInpGrads == inputSize + m_auxInputSize);
       assert(layers[skipBackPropLayerID]->spanCompInpGrads >= inputSize);
       // next two lines actually tell the network to skip backprop to input:
@@ -175,41 +177,41 @@ void Approximator::initializeNetwork()
 // buildFromSettings reads from the settings file the amount of fully connected
 // layers (nnl1, nnl2, ...) and builds a network with given number of nInputs
 // and nOutputs. Supports LSTM, RNN and MLP (aka InnerProduct or Dense).
-//void stackSimple(uint64_t ninps,uint64_t nouts) { return stackSimple(ninps,{nouts}); }
-void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes)
-{
+// void stackSimple(uint64_t ninps,uint64_t nouts) { return
+// stackSimple(ninps,{nouts}); }
+void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes) {
   if (not build)
     build = std::make_unique<Builder>(settings, m_ExecutionInfo);
 
-  const MDPdescriptor & MDP = replay->MDP;
+  const MDPdescriptor& MDP = replay->MDP;
   // last chance to update size of aux input size:
-  if(auxInputNet && m_auxInputSize<=0) {
+  if (auxInputNet && m_auxInputSize <= 0) {
     assert(m_auxInputSize != 0 && "Default is -1, what set it to 0?");
     m_auxInputSize = auxInputNet->nOutputs();
   }
-  //build.stackSimple( inputSize, outputSizes );
+  // build.stackSimple( inputSize, outputSizes );
 
-  const uint64_t nOuts = std::accumulate(outputSizes.begin(), outputSizes.end(), 0);
+  const uint64_t nOuts =
+      std::accumulate(outputSizes.begin(), outputSizes.end(), 0);
   const std::string outFuncType = settings.nnOutputFunc;
   const std::vector<uint64_t>& layerSizes = settings.nnLayerSizes;
 
-  if( build->layers.size() )
-  {
+  if (build->layers.size()) {
     // cannot have both already built preprocessing net and also build
     // preprocessing layers below here.
-    if(preprocessing)
+    if (preprocessing)
       die("Preprocessing layers were created for a network type that does not "
           "support being together with preprocessing layers");
-    if(m_auxInputSize>0)
-      build->addInput(m_auxInputSize); // add slot to insert aux input layer
-  }
-  else
-  {
-    uint64_t inputSize = preprocessing ? preprocessing->nOutputs()
-                                  : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
-    if(m_auxInputSize>0) inputSize += m_auxInputSize;
+    if (m_auxInputSize > 0)
+      build->addInput(m_auxInputSize);  // add slot to insert aux input layer
+  } else {
+    uint64_t inputSize = preprocessing
+                             ? preprocessing->nOutputs()
+                             : (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+    if (m_auxInputSize > 0)
+      inputSize += m_auxInputSize;
 
-    if(inputSize == 0) {
+    if (inputSize == 0) {
       warn("network with no input space. will return a param layer");
       build->addParamLayer(nOuts, outFuncType, std::vector<Real>(nOuts, 0));
       return;
@@ -219,87 +221,290 @@ void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes)
   // if user already asked RNN/LSTM/GRU, follow settings
   // else if MDP declared that it is partially obs override and use simple RNN
   const std::string netType =
-    MDP.isPartiallyObservable and settings.bRecurrent == false? "MGU"
-                                                              : settings.nnType;
-  for(uint64_t i=0; i<layerSizes.size(); ++i)
-    if(layerSizes[i] > 0)
+      MDP.isPartiallyObservable and settings.bRecurrent == false
+          ? "MGU"
+          : settings.nnType;
+  for (uint64_t i = 0; i < layerSizes.size(); ++i)
+    if (layerSizes[i] > 0)
       build->addLayer(layerSizes[i], settings.nnFunc, false, netType);
 
-  if(nOuts > 0) build->addLayer(nOuts, settings.nnOutputFunc, true);
+  if (nOuts > 0)
+    build->addLayer(nOuts, settings.nnOutputFunc, true);
 }
 
-void Approximator::buildPreprocessing(const std::vector<uint64_t> preprocLayers)
-{
-  if(build)
+void Approximator::buildPreprocessing(
+    const std::vector<uint64_t> preprocLayers) {
+  if (build)
     die("attempted to create preprocessing layers multiple times");
-  if(preprocessing)
+  if (preprocessing)
     die("Preprocessing layers were created for a network type that does not "
         "support being together with preprocessing layers");
 
   build = std::make_unique<Builder>(settings, m_ExecutionInfo);
 
-  const MDPdescriptor & MDP = replay->MDP;
-  const uint64_t dimS = preprocessing? preprocessing->nOutputs()
-                                 : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
-  if ( MDP.conv2dDescriptors.size() > 0 )
-  {
+  const MDPdescriptor& MDP = replay->MDP;
+  const uint64_t dimS = preprocessing
+                            ? preprocessing->nOutputs()
+                            : (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+  if (MDP.conv2dDescriptors.size() > 0) {
     const uint64_t nConvs = MDP.conv2dDescriptors.size();
     const auto& conv0 = MDP.conv2dDescriptors[0];
-    assert(dimS >= conv0.inpFeatures*conv0.inpY*conv0.inpX);
-    const int64_t extraInputSize = dimS - conv0.inpFeatures*conv0.inpY*conv0.inpX;
+    assert(dimS >= conv0.inpFeatures * conv0.inpY * conv0.inpX);
+    const int64_t extraInputSize =
+        dimS - conv0.inpFeatures * conv0.inpY * conv0.inpX;
 
-    build->addInput(conv0.inpFeatures * conv0.inpY * conv0.inpX );
-    for(uint64_t i=0; i<nConvs; ++i)
+    build->addInput(conv0.inpFeatures * conv0.inpY * conv0.inpX);
+    for (uint64_t i = 0; i < nConvs; ++i)
       build->addConv2d(MDP.conv2dDescriptors[i]);
 
-    if(extraInputSize) {
-      warn("Mismatch between state dim and input conv2d, will add extra "
-           "variables after the convolutional layers.");
+    if (extraInputSize) {
+      warn(
+          "Mismatch between state dim and input conv2d, will add extra "
+          "variables after the convolutional layers.");
       build->addInput(extraInputSize);
     }
-  }
-  else build->addInput( dimS );
+  } else
+    build->addInput(dimS);
 
   // if user already asked RNN/LSTM/GRU, follow settings
   // else if MDP declared that it is partially obs override and use simple RNN
   const std::string netType =
-    MDP.isPartiallyObservable and settings.bRecurrent == false? "RNN"
-                                                              : settings.nnType;
-  for (uint64_t i=0; i<preprocLayers.size(); ++i)
-    if(preprocLayers[i]>0)
+      MDP.isPartiallyObservable and settings.bRecurrent == false
+          ? "RNN"
+          : settings.nnType;
+  for (uint64_t i = 0; i < preprocLayers.size(); ++i)
+    if (preprocLayers[i] > 0)
       build->addLayer(preprocLayers[i], settings.nnFunc, false, netType);
 }
 
-void Approximator::getHeaders(std::ostringstream& buff) const
-{
+void Approximator::getHeaders(std::ostringstream& buff) const {
   return opt->getHeaders(buff, name);
 }
-void Approximator::getMetrics(std::ostringstream& buff) const
-{
+void Approximator::getMetrics(std::ostringstream& buff) const {
   return opt->getMetrics(buff);
 }
 
-void Approximator::save(const std::string base, const bool bBackup)
-{
-  const auto F = [&](const Parameters*const W,
-                           const std::string fname, const bool bBack) {
-    net->save(W, fname, bBack);
-  };
-  if(!opt) die("Attempted to save uninitialized net!");
-  opt->save(F, base+"_"+name, bBackup);
-}
-void Approximator::restart(const std::string base)
-{
-  const auto F = [&](const Parameters*const W, const std::string fname) {
-    return net->restart(W, fname);
-  };
-  if(!opt) die("Attempted to restart uninitialized net!");
-  opt->restart(F, base+"_"+name);
+void Approximator::save(const std::string base, const bool bBackup) {
+  const auto F = [&](const Parameters* const W, const std::string fname,
+                     const bool bBack) { net->save(W, fname, bBack); };
+  if (!opt)
+    die("Attempted to save uninitialized net!");
+  opt->save(F, base + "_" + name, bBackup);
 }
 
-void Approximator::gatherParameters(ParameterBlob& params) const
-{
+void Approximator::restart(const std::string base) {
+  const auto F = [&](const Parameters* const W, const std::string fname) {
+    return net->restart(W, fname);
+  };
+  if (!opt)
+    die("Attempted to restart uninitialized net!");
+  opt->restart(F, base + "_" + name);
+}
+
+void Approximator::gatherParameters(ParameterBlob& params) const {
   params.add(net->weights->nParams, net->weights->params);
 }
 
-} // end namespace smarties
+void Approximator::updateGradStats(const std::string& base,
+                                   const uint64_t iter) const {
+  gradStats->reduce_stats(base + "_" + name, iter);
+}
+
+void Approximator::buildFromSettings(const uint64_t outputSize) {
+  buildFromSettings(std::vector<uint64_t>(1, outputSize));
+}
+
+void Approximator::load(const MiniBatch& B,
+                        const uint64_t batchID,
+                        const int64_t wghtID) const {
+  const uint64_t thrID = omp_get_thread_num();
+  // ensure we allocated enough workspaces:
+  assert(contexts.size() > thrID && threadsPerBatch.size() > batchID);
+  ThreadContext& C = *contexts[thrID].get();
+  threadsPerBatch[batchID] = thrID;
+  assert(C.endBackPropStep(0) < 0 && "Previous backprop did not finish?");
+  C.load(net, B, batchID, wghtID);
+}
+
+void Approximator::load(const MiniBatch& B,
+                        const Agent& agent,
+                        const int64_t wghtID) const {
+  assert(agentsContexts.size() > agent.ID);
+  AgentContext& C = *agentsContexts[agent.ID].get();
+  C.load(net, B, agent, wghtID);
+}
+
+Rvec Approximator::forward(const Agent& agent,
+                           const bool overwrite) const {
+  const auto& C = getContext(agent);
+  return forward(agent, C.episode()->nsteps() - 1, 0, overwrite);
+}
+
+void Approximator::setGradient(const Rvec& gradient,
+                               const uint64_t batchID,
+                               const uint64_t t,
+                               int64_t sampID) const {
+  ThreadContext& C = getContext(batchID);
+  if (sampID > (int64_t)C.nAddedSamples) {
+    sampID = 0;
+  }
+  // for(uint64_t i=0; i<grad.size(); ++i) grad[i] *= PERW;
+  gradStats->track_vector(gradient, C.threadID);
+  const int64_t ind = C.mapTime2Ind(t);
+  // ind+1 because we use c-style for loops in other places:
+  C.endBackPropStep(sampID) = std::max(C.endBackPropStep(sampID), ind + 1);
+  assert(C.activation(t, sampID)->written);
+  if (ESpopSize > 1)
+    debugL("Skipping backward because we use ES.");
+  else
+    C.activation(t, sampID)->addOutputDelta(gradient);
+}
+
+Rvec Approximator::oneStepBackProp(const Rvec& gradient,
+                                   const uint64_t batchID,
+                                   const uint64_t t,
+                                   int64_t sampID) const {
+  assert(auxInputNet && "improperly set up the aux input net");
+  assert(auxInputAttachLayer >= 0 && "improperly set up the aux input net");
+  if (ESpopSize > 1) {
+    debugL("Skipping backprop because we use ES optimizers.");
+    return Rvec(m_auxInputSize, 0);
+  }
+  ThreadContext& C = getContext(batchID);
+  if (sampID > (int64_t)C.nAddedSamples) {
+    sampID = 0;
+  }
+  const MDPdescriptor& MDP = replay->MDP;
+  const Parameters* const W = opt->getWeights(C.usedWeightID(sampID));
+  const uint64_t inputSize =
+      preprocessing ? preprocessing->nOutputs()
+                    : (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+  Activation* const A = C.activation(t, sampID);
+  assert(C.activation(t, sampID)->written == true);
+  const Rvec ret = net->backPropToLayer(gradient, auxInputAttachLayer, A, W);
+  // C.endBackPropStep(sampID) = -1; //to stop additional backprops
+  // printf("%f\n", ret[inputSize]);
+  if (auxInputAttachLayer > 0)
+    return ret;
+  else
+    return Rvec(&ret[inputSize], &ret[inputSize + m_auxInputSize]);
+}
+
+Rvec Approximator::getStepBackProp(const uint64_t batchID,
+                                   const uint64_t t,
+                                   int64_t sampID) const {
+  assert(auxInputNet && "improperly set up the aux input net");
+  assert(auxInputAttachLayer >= 0 && "improperly set up the aux input net");
+  if (ESpopSize > 1) {
+    debugL("Skipping backprop because we use ES optimizers.");
+    return Rvec(m_auxInputSize, 0);
+  }
+  ThreadContext& C = getContext(batchID);
+  if (sampID > (int64_t)C.nAddedSamples) {
+    sampID = 0;
+  }
+  const MDPdescriptor& MDP = replay->MDP;
+  const uint64_t inputSize =
+      preprocessing ? preprocessing->nOutputs()
+                    : (1 + MDP.nAppendedObs) * MDP.dimStateObserved;
+  assert(C.activation(t, sampID)->written == true);
+  Rvec ret = C.activation(t, sampID)->getInputGradient(auxInputAttachLayer);
+  // C.endBackPropStep(sampID) = -1; //to stop additional backprops
+  // printf("%f\n", ret[inputSize]);
+  if (auxInputAttachLayer > 0)
+    return ret;
+  else
+    return Rvec(&ret[inputSize], &ret[inputSize + m_auxInputSize]);
+}
+
+void Approximator::backProp(const uint64_t batchID) const {
+  ThreadContext& C = getContext(batchID);
+
+  if (ESpopSize > 1) {
+    debugL("Skipping gradient because we use ES (derivative-free) optimizers.");
+  } else {
+    const auto& activations = C.activations;
+    const auto& timeSeriesBase = activations[0];
+
+    // loop over all the network samples, each may need different BPTT window
+    for (uint64_t j = 0; j < activations.size(); ++j) {
+      const uint64_t samp = activations.size() - 1 - j;
+      const int64_t last_error = C.endBackPropStep(samp);
+      if (last_error < 0)
+        continue;
+
+      const auto& timeSeriesSamp = activations[samp];
+      for (int64_t i = 0; i < last_error; ++i)
+        assert(timeSeriesSamp[i]->written);
+
+      const Parameters* const W = opt->getWeights(C.usedWeightID(samp));
+      net->backProp(timeSeriesSamp, timeSeriesBase, last_error,
+                    C.partialGradient.get(), W);
+
+      if (preprocessing and not m_blockInpGrad) {
+        for (int64_t k = 0; k < last_error; ++k) {
+          const uint64_t t = C.mapInd2Time(k);
+          // assume that preprocessing is layer 0:
+          Rvec inputGrad = C.activation(t, samp)->getInputGradient(0);
+          // we might have added inputs, therefore trim those:
+          inputGrad.resize(preprocessing->nOutputs());
+          preprocessing->setGradient(inputGrad, batchID, t, samp);
+        }
+      }
+      C.endBackPropStep(samp) = -1;  // to stop additional backprops
+    }
+  }
+
+  nAddedGradients++;
+}
+
+void Approximator::prepareUpdate() {
+#ifndef NDEBUG
+  for (const auto& C : contexts)
+    for (const int64_t todoBackProp : C->lastGradTstep)
+      assert(todoBackProp < 0 &&
+             "arrived into prepareUpdate() before doing backprop on all "
+             "workspaces");
+#endif
+
+  if (nAddedGradients == 0)
+    die("No-gradient update. Revise hyperparameters.");
+
+  if (preprocessing and not m_blockInpGrad)
+    for (uint64_t i = 0; i < ESpopSize; ++i)
+      preprocessing->losses[i] += losses[i];
+
+  opt->prepare_update(losses);
+  losses = Rvec(ESpopSize, 0);
+  reducedGradients = 1;
+  nAddedGradients = 0;
+}
+
+void Approximator::applyUpdate() {
+  if (reducedGradients == 0)
+    return;
+
+  opt->apply_update();
+  reducedGradients = 0;
+}
+
+ThreadContext& Approximator::getContext(const uint64_t batchID) const {
+  assert(threadsPerBatch.size() > batchID);
+  return *contexts[threadsPerBatch[batchID]].get();
+}
+
+AgentContext& Approximator::getContext(const Agent& agent) const {
+  assert(agentsContexts.size() > agent.ID && agentsContexts[agent.ID]);
+  return *agentsContexts[agent.ID].get();
+}
+
+uint64_t Approximator::nLayers() const {
+  if (net)
+    return net->nLayers;
+  else if (build)
+    return build->layers.size();
+  else
+    return 0;
+}
+
+}  // end namespace smarties
