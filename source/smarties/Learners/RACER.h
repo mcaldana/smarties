@@ -50,7 +50,8 @@ class RACER : public Learner_approximator
   // number of parameters of advantage approximator
   const uint64_t nL = Advantage_t::compute_nL(aInfo);
 
-  // indices identifying number and starting position of the different output // groups from the network, that are read by separate functions
+  // indices identifying number and starting position of the different output 
+  // groups from the network, that are read by separate functions
   // such as state value, policy mean, policy std, adv approximator
   const std::vector<uint64_t> net_outputs;
   const std::vector<uint64_t> net_indices = Utilities::count_indices(net_outputs);
@@ -73,15 +74,6 @@ class RACER : public Learner_approximator
   Rvec policyGradient(const Rvec& MU, const Rvec& ACT,
                       const Policy_t& POL, const Advantage_t& ADV,
                       const Real A_RET, const Real IMPW, const uint64_t thrID) const;
-
-  //inline Rvec criticGrad(const Policy_t& POL, const Advantage_t& ADV,
-  //  const Real A_RET, const Real A_critic) const {
-  //  const Real anneal = iter()>epsAnneal ? 1 : Real(iter())/epsAnneal;
-  //  const Real varCritic = ADV.advantageVariance();
-  //  const Real iEpsA = std::pow(A_RET-A_critic,2)/(varCritic+2.2e-16);
-  //  const Real eta = anneal * safeExp( -0.5*iEpsA);
-  //  return POL.control_grad(&ADV, eta);
-  //}
 
   static std::vector<uint64_t> count_outputs(const ActionInfo& aI);
   static std::vector<uint64_t> count_pol_starts(const ActionInfo& aI);

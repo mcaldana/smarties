@@ -87,15 +87,6 @@ void Learner::processMemoryBuffer()
   profiler->stop_start("FIND");
   MemoryProcessing::applyEpisodesRemovalAlgo(* data.get());
 
-  if (/* DISABLES CODE */ 0) {
-    // This would act like a PID controller to keep Q mean 0 stdev 1
-    const Real eta = settings.learnrate, epsAnneal = settings.epsAnneal;
-    const Real learnR = Utilities::annealRate(eta,nGradSteps(),epsAnneal);
-    MDP.rewardsMean += learnR/10 * data->stats.avgQ;
-    MDP.rewardsStdDev += learnR/100 * (data->stats.stdevQ - 1);
-    MDP.rewardsScale = 1 / MDP.rewardsStdDev;
-  }
-
   MemoryProcessing::updateCounters(* data.get());
   profiler->stop();
 }

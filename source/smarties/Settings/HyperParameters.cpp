@@ -15,6 +15,7 @@
 #include <cassert>
 #include <fstream>
 #include <unistd.h>
+#include <iostream>
 
 namespace smarties
 {
@@ -120,6 +121,13 @@ std::string HyperParameters::printArgComments()
   return j.dump(4);
 }
 
+template<typename T>
+std::ostream &operator <<(std::ostream &os, const std::vector<T> &v) {
+   using namespace std;
+   copy(v.begin(), v.end(), ostream_iterator<T>(os, ", "));
+   return os;
+}
+
 void HyperParameters::initializeOpts(std::ifstream & inputStream,
                                      ExecutionInfo & distrib)
 {
@@ -173,6 +181,44 @@ void HyperParameters::initializeOpts(std::ifstream & inputStream,
   // split read workloads among processes:
   defineDistributedLearning(distrib);
   check();
+
+  std::cout << "------------------------------------------" << std::endl;
+  std::cout << "JSON settings" << std::endl;
+  std::cout << "------------------------------------------" << std::endl;
+
+  std::cout << "learner:" << learner << std::endl;
+  std::cout << "ERoldSeqFilter:" << ERoldSeqFilter << std::endl;
+  std::cout << "dataSamplingAlgo:" << dataSamplingAlgo << std::endl;
+  std::cout << "returnsEstimator:" << returnsEstimator << std::endl;
+
+  std::cout << "gamma:" << gamma << std::endl;
+  std::cout << "explNoise:" << explNoise << std::endl;
+  std::cout << "lambda:" << lambda << std::endl;
+  std::cout << "obsPerStep:" << obsPerStep << std::endl;
+  std::cout << "clipImpWeight:" << clipImpWeight << std::endl;
+  std::cout << "penalTol:" << penalTol << std::endl;
+  std::cout << "klDivConstraint:" << klDivConstraint << std::endl;
+  std::cout << "targetDelay:" << targetDelay << std::endl;
+  std::cout << "epsAnneal:" << epsAnneal << std::endl;
+
+  std::cout << "minTotObsNum:" << minTotObsNum << std::endl;
+  std::cout << "maxTotObsNum:" << maxTotObsNum << std::endl;
+  std::cout << "saveFreq:" << saveFreq << std::endl;
+
+  std::cout << "encoderLayerSizes:" << encoderLayerSizes << std::endl;
+  std::cout << "nnLayerSizes:" << nnLayerSizes << std::endl;
+
+  std::cout << "batchSize:" << batchSize << std::endl;
+  std::cout << "ESpopSize:" << ESpopSize << std::endl;
+  std::cout << "nnBPTTseq:" << nnBPTTseq << std::endl;
+  std::cout << "nnOutputFunc:" << nnOutputFunc << std::endl;
+  std::cout << "outWeightsPrefac:" << outWeightsPrefac << std::endl;
+  std::cout << "nnFunc:" << nnFunc << std::endl;
+  std::cout << "nnType:" << nnType << std::endl;
+  std::cout << "nnLambda:" << nnLambda << std::endl;
+  std::cout << "learnrate:" << learnrate << std::endl;
+  std::cout << "------------------------------------------" << std::endl;
+  
 }
 
 void HyperParameters::defineDistributedLearning(ExecutionInfo& distrib)
