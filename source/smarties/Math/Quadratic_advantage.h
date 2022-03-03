@@ -74,7 +74,7 @@ struct Quadratic_advantage: public Quadratic_term
   Real computeAdvantage(const Rvec& action) const
   {
     Real ret = -quadraticTerm(action);
-    if(policy != nullptr)
+    if(policy)
     { //subtract expectation from advantage of action
       ret += quadraticTerm(policy->getMean());
       for(uint64_t i=0; i<nA; ++i)

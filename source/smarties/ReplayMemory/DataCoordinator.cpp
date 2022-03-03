@@ -137,7 +137,7 @@ void DataCoordinator::mastersRecvEpisodes()
       replay->pushBackEpisode(std::make_unique<Episode>(sharedEP, MDP));
   }
 
-  assert(allTasksPtr != nullptr);
+  assert(allTasksPtr);
   // if all learners are locking data acquisition we do not recv eps from worker
   // such that they wait for updated parameters before gathering more data
   if(allTasksPtr->dataAcquisitionIsLocked()) return;

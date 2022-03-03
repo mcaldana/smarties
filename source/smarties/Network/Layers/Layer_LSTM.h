@@ -92,7 +92,7 @@ class LSTMLayer: public Layer
       }
     }
 
-    if(prev != nullptr)
+    if(prev)
     {
       const nnReal* const inputs = prev->Y(ID);
       const nnReal* const weight = para->W(ID) +(4*nCells)*nInputs;
@@ -156,7 +156,7 @@ class LSTMLayer: public Layer
       deltas[o+0*nCells] = IGate[o] * stateDelta[o];
       //                  | sigmoid derivative |
       deltas[o+1*nCells] = IGate[o]*(1-IGate[o]) * cellInpt[o] * stateDelta[o];
-      if(prev != nullptr)
+      if(prev)
       deltas[o+2*nCells] = FGate[o]*(1-FGate[o]) * prvState[o] * stateDelta[o];
       else deltas[o+2*nCells] = 0;
       deltas[o+3*nCells] = OGate[o]*(1-OGate[o]) * D * cellOutput[o];

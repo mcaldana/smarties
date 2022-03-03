@@ -49,9 +49,9 @@ struct Activation
   }
 
   ~Activation() {
-    for(auto& p : suminps) if(p != nullptr) free(p);
-    for(auto& p : outvals) if(p != nullptr) free(p);
-    for(auto& p : errvals) if(p != nullptr) free(p);
+    for(auto& p : suminps) if(p) free(p);
+    for(auto& p : outvals) if(p) free(p);
+    for(auto& p : errvals) if(p) free(p);
   }
 
   template<typename T>
@@ -150,7 +150,7 @@ struct Activation
   void clearOutput() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(outvals[i] != nullptr);
+      assert(outvals[i]);
       memset( outvals[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }
@@ -158,7 +158,7 @@ struct Activation
   void clearErrors() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(errvals[i] != nullptr);
+      assert(errvals[i]);
       memset( errvals[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }
@@ -166,7 +166,7 @@ struct Activation
   void clearInputs() const
   {
     for(int i=0; i<nLayers; ++i) {
-      assert(suminps[i] != nullptr);
+      assert(suminps[i]);
       memset( suminps[i], 0, Utilities::roundUpSimd(sizes[i])*sizeof(nnReal) );
     }
   }

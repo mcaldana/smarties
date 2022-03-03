@@ -87,7 +87,7 @@ void Launcher::launch(const environment_callback_t & callback,
   // app only needs lower level functionalities:
   // ie. send state, recv action, specify state/action spaces properties...
   Communicator* const commptr = static_cast<Communicator*>(this);
-  assert(commptr != nullptr);
+  assert(commptr);
 
   while(true)
   {
@@ -199,7 +199,7 @@ std::vector<char*> Launcher::readRunArgLst(const std::string& paramFile)
 
   // first put argc argv into args:
   for(int i=0; i<m_ExecutionInfo.argc; ++i)
-    if(m_ExecutionInfo.argv[i] != nullptr)
+    if(m_ExecutionInfo.argv[i])
       addArg ( std::string( m_ExecutionInfo.argv[i] ) );
 
   if (paramFile != "")

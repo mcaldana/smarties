@@ -135,7 +135,7 @@ struct Agent
 
   void packStateMsg(void * const buffer) const // put agent's state into buffer
   {
-    assert(buffer != nullptr);
+    assert(buffer);
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
@@ -153,7 +153,7 @@ struct Agent
 
   void unpackStateMsg(const void * const buffer) // get state from buffer
   {
-    assert(buffer != nullptr);
+    assert(buffer);
     const char * msgPos = (const char*) buffer;
     unsigned testAgentID, testStepID;
 
@@ -190,7 +190,7 @@ struct Agent
 
   void packActionMsg(void * const buffer) const
   {
-    assert(buffer != nullptr);
+    assert(buffer);
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
@@ -207,7 +207,7 @@ struct Agent
 
   void unpackActionMsg(const void * const buffer)
   {
-    assert(buffer != nullptr);
+    assert(buffer);
     const char * msgPos = (const char*) buffer;
     unsigned testAgentID;
     memcpy(&testAgentID,       msgPos, sizeof(unsigned));

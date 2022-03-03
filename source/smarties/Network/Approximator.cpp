@@ -26,7 +26,7 @@ Approximator::Approximator(std::string name_,
 
 Approximator::~Approximator()
 {
-  if(gradStats != nullptr) delete gradStats;
+  if(gradStats) delete gradStats;
 }
 
 void Approximator::setBlockGradsToPreprocessing()
@@ -205,7 +205,7 @@ void Approximator::buildFromSettings(const std::vector<uint64_t> outputSizes)
   }
   else
   {
-    uint64_t inputSize = preprocessing != nullptr ? preprocessing->nOutputs()
+    uint64_t inputSize = preprocessing ? preprocessing->nOutputs()
                                   : (1+MDP.nAppendedObs) * MDP.dimStateObserved;
     if(m_auxInputSize>0) inputSize += m_auxInputSize;
 

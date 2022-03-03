@@ -79,7 +79,7 @@ class BaseLayer: public Layer
           suminp[o] += inputs[i] * W[o];
       }
     }
-    if(bRecurrent && prev != nullptr)
+    if(bRecurrent && prev)
     {
       const nnReal* const inputs = prev->Y(ID);
       const nnReal* const weight = para->W(ID) +nOut_simd*nInputs;

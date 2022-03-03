@@ -57,8 +57,8 @@ struct Approximator
     else return net->getnOutputs();
   }
   uint64_t nLayers() const {
-    if (net != nullptr) return net->nLayers;
-    else if (build != nullptr) return build->layers.size();
+    if (net) return net->nLayers;
+    else if (build) return build->layers.size();
     else return 0;
   }
   void setNgradSteps(const uint64_t iter) const { opt->nStep = iter; }
@@ -151,7 +151,7 @@ struct Approximator
 
     if(C.addedInputType(sampID) == NETWORK)
     {
-      assert(auxInputNet != nullptr);
+      assert(auxInputNet);
       Rvec addedinp = auxInputNet->forward(contextID, t, sampID);
       assert( (int64_t) addedinp.size() >= m_auxInputSize);
       addedinp.resize(m_auxInputSize);

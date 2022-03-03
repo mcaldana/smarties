@@ -26,7 +26,7 @@ Learner_approximator::Learner_approximator(MDPdescriptor& MDP_,
 Learner_approximator::~Learner_approximator()
 {
   for(auto & net : networks) {
-    if(net != nullptr) {
+    if(net) {
       delete net;
       net = nullptr;
     }
