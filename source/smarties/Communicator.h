@@ -206,7 +206,7 @@ protected:
 
   //called by app to interact with smarties:
   VISIBLE void _sendState(const int agentID,
-                          const episodeStatus status,
+                          const EpisodeStatus status,
                           const std::vector<double>& state,
                           const double reward);
 

@@ -20,17 +20,8 @@
 namespace smarties
 {
 
-enum episodeStatus {INIT = 0, CONT, LAST, TERM, FAIL};
-enum learnerStatus {WORK = 0, KILL};
-
-inline int status2int(const episodeStatus status) {
-  if(status == INIT) return 0;
-  if(status == CONT) return 1;
-  if(status == LAST) return 2;
-  if(status == TERM) return 3;
-  if(status == FAIL) return 4;
-  die("unreachable"); return 0;
-}
+enum EpisodeStatus {INIT = 0, CONT, LAST, TERM, FAIL};
+enum LearnerStatus {WORK = 0, KILL};
 
 struct Agent
 {
@@ -38,10 +29,10 @@ struct Agent
   const unsigned workerID;
   const unsigned localID;
 
-  episodeStatus agentStatus = INIT;
+  EpisodeStatus agentStatus = INIT;
   unsigned timeStepInEpisode = 0;
 
-  learnerStatus learnStatus = WORK;
+  LearnerStatus learnStatus = WORK;
   unsigned learnerTimeStepID = 0;
   unsigned learnerGradStepID = 0;
   double learnerAvgCumulativeReward = 0;
@@ -75,7 +66,7 @@ struct Agent
   }
 
   template<typename T>
-  void update(const episodeStatus E, const std::vector<T>& S, const double R)
+  void update(const EpisodeStatus E, const std::vector<T>& S, const double R)
   {
     assert( S.size() == MDP.dimS() );
     agentStatus = E;
@@ -148,8 +139,8 @@ struct Agent
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
-    memcpy(msgPos, &agentStatus,       sizeof(episodeStatus));
-    msgPos +=                          sizeof(episodeStatus) ;
+    memcpy(msgPos, &agentStatus,       sizeof(EpisodeStatus));
+    msgPos +=                          sizeof(EpisodeStatus) ;
     memcpy(msgPos, &timeStepInEpisode, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
     memcpy(msgPos, &reward,            sizeof(double));
@@ -169,8 +160,8 @@ struct Agent
     memcpy(&testAgentID,       msgPos, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
     assert(testAgentID == localID);
-    memcpy(&agentStatus,       msgPos, sizeof(episodeStatus));
-    msgPos +=                          sizeof(episodeStatus) ;
+    memcpy(&agentStatus,       msgPos, sizeof(EpisodeStatus));
+    msgPos +=                          sizeof(EpisodeStatus) ;
     memcpy(&testStepID,        msgPos, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
 
@@ -203,8 +194,8 @@ struct Agent
     char * msgPos = (char*) buffer;
     memcpy(msgPos, &localID,           sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
-    memcpy(msgPos, &learnStatus,       sizeof(learnerStatus));
-    msgPos +=                          sizeof(learnerStatus) ;
+    memcpy(msgPos, &learnStatus,       sizeof(LearnerStatus));
+    msgPos +=                          sizeof(LearnerStatus) ;
     memcpy(msgPos, &learnerTimeStepID, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
     memcpy(msgPos, &learnerGradStepID, sizeof(unsigned));
@@ -221,8 +212,8 @@ struct Agent
     unsigned testAgentID;
     memcpy(&testAgentID,       msgPos, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
-    memcpy(&learnStatus,       msgPos, sizeof(learnerStatus));
-    msgPos +=                          sizeof(learnerStatus) ;
+    memcpy(&learnStatus,       msgPos, sizeof(LearnerStatus));
+    msgPos +=                          sizeof(LearnerStatus) ;
     memcpy(&learnerTimeStepID, msgPos, sizeof(unsigned));
     msgPos +=                          sizeof(unsigned) ;
     memcpy(&learnerGradStepID, msgPos, sizeof(unsigned));
@@ -237,23 +228,23 @@ struct Agent
   {
     return * (unsigned*) buffer;
   }
-  static episodeStatus& messageEpisodeStatus(char * buffer)
+  static EpisodeStatus& messageEpisodeStatus(char * buffer)
   {
     buffer += sizeof(unsigned);
-    return * (episodeStatus *) buffer;
+    return * (EpisodeStatus *) buffer;
   }
-  static learnerStatus& messageLearnerStatus(char * buffer)
+  static LearnerStatus& messageLearnerStatus(char * buffer)
   {
     buffer += sizeof(unsigned);
-    return * (learnerStatus *) buffer;
+    return * (LearnerStatus *) buffer;
   }
   static size_t computeStateMsgSize(const size_t sDim)
   {
-   return 2*sizeof(unsigned) + sizeof(episodeStatus) + (sDim+1)*sizeof(double);
+   return 2*sizeof(unsigned) + sizeof(EpisodeStatus) + (sDim+1)*sizeof(double);
   }
   static size_t computeActionMsgSize(const size_t aDim)
   {
-   return 3*sizeof(unsigned) +sizeof(learnerStatus) + aDim*sizeof(double);
+   return 3*sizeof(unsigned) +sizeof(LearnerStatus) + aDim*sizeof(double);
   }
 
   // for dumping to state-action-reward-policy binary log (writeBuffer):
@@ -287,7 +278,7 @@ struct Agent
     if(buffCnter+writesize > OUTBUFFSIZE) writeBuffer(logpath, rank);
     uint64_t ind = buffCnter;
     buf[ind++] = globalTstep + 0.1;
-    buf[ind++] = status2int(agentStatus) + 0.1;
+    buf[ind++] = int(agentStatus) + 0.1;
     buf[ind++] = timeStepInEpisode + 0.1;
     for (uint64_t i=0; i<state.size(); ++i) buf[ind++] = (float) state[i];
     for (uint64_t i=0; i<action.size(); ++i) buf[ind++] = (float) action[i];

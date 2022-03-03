@@ -196,7 +196,7 @@ std::vector<float> Episode::logToFile(const uint64_t iterStep) const
     *(pos++) = iterStep + 0.1;
     const auto steptype = t==0 ? INIT : ( isTerminal(t) ? TERM : (
                           isTruncated(t) ? LAST : CONT ) );
-    *(pos++) = status2int(steptype) + 0.1;
+    *(pos++) = int(steptype) + 0.1;
     *(pos++) = t + 0.1;
     const auto S = StateInfo::observedAndLatent2state(states[t], latent_states[t], MDP);
     std::copy(S.begin(), S.end(), pos); pos += dS + dI;

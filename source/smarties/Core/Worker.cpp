@@ -320,7 +320,7 @@ void Worker::loopSocketsToMaster()
 
     if(completed) {
       stepWorkerToMaster(workID);
-      learnerStatus& S = Agent::messageLearnerStatus((char*) B.dataActionBuf);
+      LearnerStatus& S = Agent::messageLearnerStatus((char*) B.dataActionBuf);
       if(S == KILL) { // check if abort was called
         sendKillMsgs(workID);
         return;

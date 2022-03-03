@@ -154,6 +154,17 @@ int ExecutionInfo::parse()
 
   try {
     parser.parse(argc, argv);
+    if(world_rank == 0) {
+    std::cout << "-----------------------------" << std::endl;
+    std::cout << "Parsed config" << std::endl;
+    std::cout << "nThreads:      " << nThreads << std::endl;
+    std::cout << "nMasters:      " << nMasters << std::endl;
+    std::cout << "nEnvironoments:" << nEnvironments << std::endl;
+    std::cout << "nProcPerEnv:   " << workerProcessesPerEnv  << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+    std::cout << "nMpiProc:      " << world_size << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+    }
   }
   catch (const CLI::ParseError &e) {
     if(world_rank == 0) {
@@ -211,10 +222,6 @@ void ExecutionInfo::figureOutWorkersPattern()
   nWorkers = world_size - nMasters;
   bool bThereAreMasters = nMasters > 0;
   bool bThereAreWorkerProcesses = nWorkers > 0;
-  //if(bThereAreWorkerProcesses) warn("there are worker processes");
-  //else warn("there are no worker processes");
-  //if(bThereAreMasters) warn("there are master processes");
-  //else warn("there are no master processes");
   if(not forkableApplication && not bThereAreWorkerProcesses) {
     die("There are no processes and application needs dedicated processes. "
         "Run with more mpi processes.");
@@ -274,20 +281,15 @@ void ExecutionInfo::figureOutWorkersPattern()
       bIsMaster = rankStripedMPISplitting(nMasters, nWorkers, world_rank) == 0;
       uint64_t commWorkID = indxStripedMPISplitting(nMasters, nWorkers, world_rank);
 
-      //if(fakeMastersRanks) { // overwrite splitting if we have only fake masters
-      //  bIsMaster = world_rank < nMasters;
-      //  masterWorkerCommID = 0;
-      //}
-
       MPI_Comm_split(world_comm, bIsMaster,  world_rank, & learners_train_comm);
       MPI_Comm_split(world_comm, commWorkID, world_rank, & master_workers_comm);
-      _debug("Process %lu is a %s part of comm %lu.\n",
+      _warn("Process %lu is a %s part of comm %lu.\n",
              world_rank, bIsMaster? "master" : "worker", commWorkID);
 
       if(bIsMaster)
       {
         nOwnedEnvironments = MPICommSize(master_workers_comm) - 1;
-        _debug("master %lu owns %lu environments", world_rank, nOwnedEnvironments);
+        _warn("master %lu owns %lu environments", world_rank, nOwnedEnvironments);
         if(nWorkers < nMasters)
              workerless_masters_comm = MPICommDup(learners_train_comm);
         else workerless_masters_comm = MPI_COMM_NULL;

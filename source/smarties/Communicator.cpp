@@ -252,7 +252,7 @@ void Communicator::finalizeProblemDescription()
   synchronizeEnvironments();
 }
 
-void Communicator::_sendState(const int agentID, const episodeStatus status,
+void Communicator::_sendState(const int agentID, const EpisodeStatus status,
     const std::vector<double>& state, const double reward)
 {
   if( not m_Environment.bFinalized ) synchronizeEnvironments(); // race condition
@@ -272,12 +272,10 @@ void Communicator::_sendState(const int agentID, const episodeStatus status,
   if(m_Sockets.server == -1)
   {
     assert(m_Worker);
-    std::cout << "m_Sockets.server == -1" << std::endl;
     m_Worker->stepWorkerToMaster( *agents[agentID].get() );
   }
   else
   {
-    std::cout << "m_Sockets.server != -1" << std::endl;
     agents[agentID]->packStateMsg(m_CommBuffers[agentID]->dataStateBuf);
     SOCKET_Bsend(m_CommBuffers[agentID]->dataStateBuf,
                  m_CommBuffers[agentID]->sizeStateMsg,
