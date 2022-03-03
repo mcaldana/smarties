@@ -157,7 +157,7 @@ class Layer
       #endif
     }
 
-    if(grad == nullptr) return;
+    if(!grad) return;
 
     {
       nnReal* const grad_b = grad->B(ID);
@@ -375,7 +375,7 @@ class ParametricResidualLayer: public Layer
     const nnReal* const inp = curr->Y(ID-2);
     const uint64_t sizeInp = std::min(curr->sizes[ID-2], size);
 
-    if(grad == nullptr) {
+    if(!grad) {
       #pragma omp simd aligned(delta, W, gradInp : VEC_WIDTH)
       for (uint64_t j=0; j<sizeInp; ++j) gradInp[j] += delta[j] * W[j];
       return;

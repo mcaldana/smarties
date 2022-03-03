@@ -192,9 +192,9 @@ class MGULayer: public Layer
       #endif
     }
 
-    if(prev==nullptr) { free(prevOut); }
+    if(!prev) { free(prevOut); }
 
-    if(grad == nullptr) return; // then no need to compute grad w.r.t. params
+    if(!grad) return; // then no need to compute grad w.r.t. params
 
     {
       nnReal* const grad_b = grad->B(ID);

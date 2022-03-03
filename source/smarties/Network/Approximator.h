@@ -53,7 +53,7 @@ struct Approximator
   void initializeNetwork();
 
   uint64_t nOutputs() const {
-    if (net == nullptr) return 0;
+    if (!net) return 0;
     else return net->getnOutputs();
   }
   uint64_t nLayers() const {

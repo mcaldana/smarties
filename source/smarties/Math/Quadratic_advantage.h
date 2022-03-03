@@ -25,7 +25,7 @@ struct Quadratic_advantage: public Quadratic_term
                       const Rvec& out,
                       const Continuous_policy*const pol = nullptr) :
     Quadratic_term(aI, starts[0], starts.size()>1? starts[1] : 0, out,
-                   pol==nullptr ? Rvec(): pol->getMean()), policy(pol) { }
+                   pol ? pol->getMean() : Rvec()), policy(pol) { }
 
   void grad(const Rvec&act, const Real Qer, Rvec& netGradient) const
   {
@@ -33,7 +33,7 @@ struct Quadratic_advantage: public Quadratic_term
     Rvec dErrdP(nA*nA, 0), dPol(nA, 0), dAct(nA);
     for (uint64_t j=0; j<nA; ++j) dAct[j] = act[j] - mean[j];
 
-    assert(policy == nullptr);
+    assert(!policy);
     //for (uint64_t j=0; j<nA; ++j) dPol[j] = policy->mean[j] - mean[j];
 
     for (uint64_t i=0; i<nA; ++i)
@@ -100,7 +100,7 @@ struct Quadratic_advantage: public Quadratic_term
 
   Real advantageVariance() const
   {
-    if(policy == nullptr) return 0;
+    if(!policy) return 0;
     Rvec PvarP(nA*nA, 0);
     for (uint64_t j=0; j<nA; ++j)
     for (uint64_t i=0; i<nA; ++i)

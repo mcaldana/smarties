@@ -331,7 +331,7 @@ std::unique_ptr<Sampling> Sampling::prepareSampler(MemoryBuffer* const R,
     ret = std::make_unique<Sample_impSeq>(D.generators,R,S.bSampleEpisodes);
   }
 
-  if(ret == nullptr) die("Setting dataSamplingAlgo not recognized.");
+  if(!ret) die("Setting dataSamplingAlgo not recognized.");
   return ret;
 }
 

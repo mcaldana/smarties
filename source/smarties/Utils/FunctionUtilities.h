@@ -311,7 +311,7 @@ inline void copyFile(const std::string& fileFrom, const std::string& fileTo)
 template <typename T>
 void dispose_object(T *& ptr)
 {
-  if(ptr == nullptr) return;
+  if(!ptr) return;
   delete ptr;
   ptr=nullptr;
 }
@@ -319,7 +319,7 @@ void dispose_object(T *& ptr)
 template <typename T>
 void dispose_object(T *const& ptr)
 {
-  if(ptr == nullptr) return;
+  if(!ptr) return;
   delete ptr;
 }
 

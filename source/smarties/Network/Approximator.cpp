@@ -285,7 +285,7 @@ void Approximator::save(const std::string base, const bool bBackup)
                            const std::string fname, const bool bBack) {
     net->save(W, fname, bBack);
   };
-  if(opt == nullptr) die("Attempted to save uninitialized net!");
+  if(!opt) die("Attempted to save uninitialized net!");
   opt->save(F, base+"_"+name, bBackup);
 }
 void Approximator::restart(const std::string base)
@@ -293,7 +293,7 @@ void Approximator::restart(const std::string base)
   const auto F = [&](const Parameters*const W, const std::string fname) {
     return net->restart(W, fname);
   };
-  if(opt == nullptr) die("Attempted to restart uninitialized net!");
+  if(!opt) die("Attempted to restart uninitialized net!");
   opt->restart(F, base+"_"+name);
 }
 
@@ -303,31 +303,3 @@ void Approximator::gatherParameters(ParameterBlob& params) const
 }
 
 } // end namespace smarties
-
-
-/*
-Rvec forward(const uint64_t samp, const uint64_t thrID,
-  const int USE_WGT, const int USE_ACT, const int overwrite=0) const;
-inline Rvec forward(const uint64_t samp, const uint64_t thrID, int USE_ACT=0) const {
-  assert(USE_ACT>=0);
-  return forward(samp, thrID, thread_Wind[thrID], USE_ACT);
-}
-template<NET USE_A = CUR>
-inline Rvec forward_cur(const uint64_t samp, const uint64_t thrID) const {
-  const int indA = USE_A==CUR? 0 : -1;
-  return forward(samp, thrID, thread_Wind[thrID], indA);
-}
-template<NET USE_A = TGT>
-inline Rvec forward_tgt(const uint64_t samp, const uint64_t thrID) const {
-  const int indA = USE_A==CUR? 0 : -1;
-  return forward(samp, thrID, -1, indA);
-}
-// relay backprop requires gradients: no wID, no sorting based opt algos
-Rvec relay_backprop(const Rvec grad, const uint64_t samp, const uint64_t thrID,
-  const bool bUseTargetWeights = false) const;
-void backward(Rvec grad, const uint64_t samp, const uint64_t thrID, const int USE_ACT=0) const;
-void gradient(const uint64_t thrID, const int wID = 0) const;
-void prepareUpdate();
-void applyUpdate();
-bool ready2ApplyUpdate();
-*/

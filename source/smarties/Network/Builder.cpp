@@ -54,7 +54,7 @@ void Builder::addLayer(const uint64_t layerSize,
   if(bBuilt) die("Cannot build the network multiple times");
 
   const uint64_t ID = layers.size();
-  if(iLink<1 || ID<iLink || layers[ID-iLink]==nullptr || nInputs==0)
+  if(iLink<1 || ID<iLink || (!layers[ID-iLink]) || nInputs==0)
     die("Missing input layer.");
   if(layerSize <= 0)  die("Requested empty layer.");
 
@@ -173,7 +173,7 @@ void Builder::addConv2d(const Conv2D_Descriptor& descr, bool bOut, uint64_t iLin
 {
   if(bBuilt) die("Cannot build the network multiple times");
   const uint64_t ID = layers.size();
-  if(iLink<1 || ID<iLink || layers[ID-iLink]==nullptr || nInputs==0)
+  if(iLink<1 || ID<iLink || (!layers[ID-iLink]) || nInputs==0)
     die("Missing input layer.");
 
   const uint64_t inpSize = descr.inpFeatures * descr.inpY * descr.inpX;

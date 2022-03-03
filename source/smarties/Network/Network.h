@@ -106,7 +106,7 @@ public:
   {
     assert(input.size()==nInputs && layers.size()==nLayers);
     currStep->setInput(input);
-    const Parameters*const W = _weights==nullptr? weights.get() : _weights;
+    const Parameters*const W = _weights ? _weights : weights.get();
     for(uint64_t j=0; j<nLayers; ++j) layers[j]->forward(prevStep, currStep, W);
     currStep->written = true;
     return currStep->getOutput();
@@ -137,7 +137,7 @@ public:
                                     const Activation*const activation,
                                     const Parameters*const _weights) const
   {
-    const Parameters*const W = _weights==nullptr? weights.get() : _weights;
+    const Parameters*const W = _weights ? _weights : weights.get();
     activation->clearErrors();
     activation->setOutputDelta(gradient);
     assert(activation->written && activation->input[toLayerID]);
@@ -159,7 +159,7 @@ public:
   {
     assert(stepLastError <= series.size());
     assert(stepLastError <= conditioning.size() + 1);
-    const Parameters*const W = _weights == nullptr ? weights.get() : _weights;
+    const Parameters*const W = _weights ? _weights : weights.get();
 
     if (stepLastError == 0) return; //no errors placed
     else
@@ -220,7 +220,7 @@ public:
   {
     assert(currStep->written);
     _gradient->written = true;
-    const Parameters*const W = _weights == nullptr ? weights.get() : _weights;
+    const Parameters*const W = _weights ? _weights : weights.get();
     for (int64_t i = (int64_t)layers.size()-1; i>=0; --i)
       layers[i]->backward(prevStep, currStep, nextStep, _gradient, W);
   }
