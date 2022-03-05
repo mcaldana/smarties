@@ -6,7 +6,7 @@
 #
 #  Created by Guido Novati (novatig@ethz.ch).
 #
-import argparse, os, psutil, sys, shutil, subprocess, signal, glob, datetime
+import argparse, os, psutil, sys, shutil, subprocess, signal, glob, datetime, time
 
 def signal_handler(sig, frame):
   JOBID = os.getenv('SLURM_JOB_ID')
@@ -223,8 +223,8 @@ def setLaunchCommand(parsed, absRunPath):
   # default:
   #cmd = "mpirun -n %d --map-by ppr:%d:node ./%s %s | tee out.log" \
   #      % (nProcesses, parsed.nTaskPerNode, parsed.execname, parsed.args)
-  cmd = "mpirun -n %d ./%s %s | tee out.log" \
-        % (nProcesses, parsed.execname, parsed.args)
+  cmd = "timeout %d mpirun -n %d ./%s %s | tee out.log" \
+        % (parsed.timeout, nProcesses, parsed.execname, parsed.args)
 
   if parsed.hpc:
     assert rundir is not None, "--runname option is required on hpc"
@@ -360,6 +360,8 @@ if __name__ == '__main__':
 
   parser.add_argument('--hpc', default="", help="HPC name")
 
+  parser.add_argument('--timeout', type=int, default=600)
+
   parser.add_argument('--args', default="",
       help="Arguments to pass directly to executable")
 
@@ -403,5 +405,4 @@ if __name__ == '__main__':
 
   print('COMMAND:' + cmd )
   signal.signal(signal.SIGINT, signal_handler)
-  subprocess.run(cmd, executable=parsed.shell, shell=True)
-
+  proc = subprocess.run(cmd, executable=parsed.shell, shell=True)
