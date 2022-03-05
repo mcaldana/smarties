@@ -154,6 +154,19 @@ int ExecutionInfo::parse()
 
   try {
     parser.parse(argc, argv);
+    if(world_rank == 0) {
+    std::cout << "-----------------------------" << std::endl;
+    std::cout << "Original" << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+    std::cout << "Parsed config" << std::endl;
+    std::cout << "nThreads:      " << nThreads << std::endl;
+    std::cout << "nMasters:      " << nMasters << std::endl;
+    std::cout << "nEnvironoments:" << nEnvironments << std::endl;
+    std::cout << "nProcPerEnv:   " << workerProcessesPerEnv  << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+    std::cout << "nMpiProc:      " << world_size << std::endl;
+    std::cout << "-----------------------------" << std::endl;
+    }
   }
   catch (const CLI::ParseError &e) {
     if(world_rank == 0) {
